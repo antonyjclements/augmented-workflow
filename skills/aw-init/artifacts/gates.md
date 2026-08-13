@@ -139,6 +139,38 @@ put in a hook or CI job.
 - `--against worktree`: compare to the working tree (staged + unstaged). Use in a
   **pre-commit** hook so edits not yet committed are considered.
 
+`check` also validates the **learning audit trail** whenever `gates.enabled` is
+true, independently of what is configured under `gates.checks`. Every
+`docs/learnings/*.md` must carry a non-empty `derived-from`, and its
+`evidence-count` must equal the number of identifiers listed. A learning that
+cites no session cannot be corroborated, expired on schedule, or traced back to
+where the lesson came from.
+
+This runs here rather than only in `scripts/test-install.sh` because that script
+executes in the augmented-workflow repo and its test-install targets — never in
+your repo, which is where learnings actually accumulate.
+
+The usual cause of a failure is a learning written mid-session by
+`aw-capture learning`: the session log and its `YYYY-MM-DD-<slug>` identifier
+are not created until the session ends, so at capture time there was nothing to
+cite. Fix it by adding the identifier of the session the lesson came from, and
+correcting `evidence-count` to match. A repo with no `docs/learnings/`
+directory passes.
+
+Some learnings genuinely have no session to cite — those written before the repo
+adopted the memory loop, or imported from elsewhere. Exempt one by stating why,
+in the learning itself:
+
+```yaml
+derived-from: []
+audit-trail-exempt: predates the memory loop (2026-07-02); no session log exists to cite
+```
+
+The reason is required: `audit-trail-exempt:` with nothing after it exempts
+nothing. The exemption lives in the file rather than in a list inside the tool
+so that it travels with the artifact and has to be justified in the diff where a
+reviewer will see it.
+
 ### `org-sync`
 
 Shallow-clones or updates the configured org knowledge repo into the git-ignored

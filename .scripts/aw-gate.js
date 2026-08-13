@@ -845,6 +845,94 @@ function evaluateGate(name, spec, entry, against) {
   return failures;
 }
 
+// --- Learning audit trail ------------------------------------------------
+// A learning with an empty `derived-from` has no audit trail: nothing links the
+// lesson back to the session that produced it, so it cannot be corroborated,
+// expired on schedule, or attributed later. `evidence-count` disagreeing with
+// the identifier list is the same defect wearing a plausible number.
+//
+// This runs inside `check` rather than only in scripts/test-install.sh because
+// that script executes in the augmented-workflow repo and its test-install
+// targets — never in a consuming repo, which is exactly where learnings
+// accumulate. A rule enforced only where the data does not exist is not
+// enforced.
+//
+// The common source of the gap is structural: `aw-capture learning` runs
+// mid-session, but a session log and its `YYYY-MM-DD-<slug>` identifier are
+// created at session end, so at capture time there is no identifier to cite.
+function frontmatterLines(text) {
+  const lines = text.split(/\r?\n/);
+  if (lines[0] !== '---') return [];
+  const end = lines.indexOf('---', 1);
+  return end === -1 ? [] : lines.slice(1, end);
+}
+
+function learningAuditFailures() {
+  const dir = path.join(repoRoot, 'docs', 'learnings');
+  let entries;
+  try {
+    entries = fs.readdirSync(dir);
+  } catch (e) {
+    // No learnings directory is not a violation — a repo may never have
+    // captured one. Firing here would make the guard fire on everything.
+    return [];
+  }
+  const failures = [];
+  for (const name of entries.slice().sort()) {
+    if (!name.endsWith('.md')) continue;
+    let text;
+    try {
+      text = fs.readFileSync(path.join(dir, name), 'utf8');
+    } catch (e) {
+      continue;
+    }
+    const fm = frontmatterLines(text);
+    if (fm.length === 0) continue;
+    let count = null;
+    let evidence = null;
+    let exempt = '';
+    for (let i = 0; i < fm.length; i += 1) {
+      const xm = /^audit-trail-exempt:\s*(.*)$/.exec(fm[i]);
+      if (xm && exempt === '') exempt = xm[1].trim().replace(/^["']|["']$/g, '');
+      const dm = /^derived-from:\s*(.*)$/.exec(fm[i]);
+      if (dm && count === null) {
+        const inline = dm[1].trim();
+        if (inline.startsWith('[')) {
+          const body = inline.replace(/^\[/, '').replace(/\]$/, '').trim();
+          count = body === '' ? 0 : body.split(',').filter((s) => s.trim() !== '').length;
+        } else {
+          let c = 0;
+          for (let j = i + 1; j < fm.length; j += 1) {
+            if (/^\s+-\s+\S/.test(fm[j])) c += 1;
+            else break;
+          }
+          count = c;
+        }
+        continue;
+      }
+      const em = /^evidence-count:\s*(\d+)\s*$/.exec(fm[i]);
+      if (em && evidence === null) evidence = Number(em[1]);
+    }
+    const rel = `docs/learnings/${name}`;
+    if (count === null) continue;
+    if (count === 0) {
+      // Some learnings genuinely have no session to cite — those written before
+      // the repo adopted the memory loop, or imported from elsewhere. The
+      // exemption lives in the learning itself, with a stated reason, rather
+      // than in a list inside this tool: the tool ships to repos whose
+      // exceptions it cannot know, and an in-file reason has to be justified in
+      // the diff where a reviewer will see it. An empty reason exempts nothing.
+      if (exempt !== '') continue;
+      failures.push(`${rel}: empty derived-from (no session identifier to trace the lesson back to)`);
+      continue;
+    }
+    if (evidence !== null && evidence !== count) {
+      failures.push(`${rel}: evidence-count ${evidence} but ${count} derived-from identifier(s)`);
+    }
+  }
+  return failures;
+}
+
 function cmdCheck(args) {
   const { flags } = parseFlags(args);
   const against = flags.against === 'worktree' ? 'worktree' : 'head';
@@ -856,7 +944,8 @@ function cmdCheck(args) {
   }
   const checks = gates.checks || {};
   const names = Object.keys(checks);
-  if (names.length === 0) {
+  const auditFailures = learningAuditFailures();
+  if (names.length === 0 && auditFailures.length === 0) {
     process.stdout.write('aw-gate: no gates configured under gates.checks — nothing to enforce\n');
     process.exit(0);
   }
@@ -867,6 +956,7 @@ function cmdCheck(args) {
       failures.push(f);
     }
   }
+  for (const f of auditFailures) failures.push(f);
   if (failures.length > 0) {
     process.stderr.write('aw-gate: gate check FAILED\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
