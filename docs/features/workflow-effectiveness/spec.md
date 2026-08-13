@@ -32,14 +32,26 @@ The distinctive claim under test is that the repo is the memory boundary. Adopti
 
 ## Current Behavior
 
-Two emission layers already exist and are fully implemented, both disabled by default and **never yet enabled in any repo, including this self-hosting one**:
+Two emission layers already exist and are fully implemented, disabled by default but **enabled and producing data in consuming repos**:
 
 - **Skill tracking** (`docs/workflow/tracking.md`) appends `{ts, session_id, skill, workflow_step, source}` to `docs/metrics/skills-YYYY-MM.jsonl` at the start of every skill, via `node .scripts/aw-gate.js track <skill>`. Fire-and-forget, no network, no keys.
 - **Gate telemetry** (`docs/metrics/README.md`) appends `{ts, event, detail, source}` to `docs/metrics/events-YYYY-MM.jsonl` on `record <gate>`.
 
-`docs/metrics/` currently contains only `README.md`. No measurement data has ever been collected. Gates and receipts run and stamp `.aw-gate-state.json`, but that state is git-ignored point-in-time state, not a time series.
+Adoption is uneven across the two layers. This self-hosting repo had no data at all until measurement was enabled here. A consuming repo (`screenbalance-ios`, AW 0.11.0) has telemetry on and has accumulated **59 gate events across two monthly shards and four active days**, while its skill tracking produces nothing yet — enabling `tracking` only takes effect once the installed skills carry the `track` emit, so a repo that flips the flag before upgrading its global skills collects gate events but no funnel data.
 
-The substrate therefore exists; the definition of success, the analysis layer, and three enabling fields do not.
+Gates and receipts also stamp `.aw-gate-state.json`, but that is git-ignored point-in-time state, not a time series. The event log is the only durable record.
+
+The substrate therefore exists and works. What is missing is the definition of success, the analysis layer, and the enabling fields below.
+
+### What the first real dataset already shows
+
+The 59-event sample is small and single-repo, but it disproves two assumptions worth recording before the analysis layer is built:
+
+**`detail` is uncontrolled free text and cannot be aggregated.** Across 26 `review` events the field carries at least ten distinct spellings of the same activity — `code`, `code review`, `code-review`, `pre-pr-code-review`, `code-review-current-head`, `local pre-pr review`, `aw-review code current diff`, and target-specific strings like `debug-modal-pairing-qr`. The schema calls it an "optional short qualifier"; nothing constrains it, and agents write whatever describes the moment. Any grouping by `detail` today produces noise, so either the field gains a controlled vocabulary or the analysis layer must treat it as human-readable annotation only.
+
+**Gate stamping without a corresponding skill run happens, and is currently visible only by accident.** Four events on the same day carry the detail `artificial stamp after initial push` — one per configured gate. That is an honest self-report of exactly the behaviour proof-of-work receipts exist to prevent, and it survived into the record only because someone typed it into a free-text field. It is direct evidence for the structured bypass events specified below, rather than a hypothesis about them.
+
+**The compounding stage is the least-exercised part of the loop.** In the same sample `capture` fired 19 times and `synthesize` once — and that single event is one of the artificial stamps. That repo has six session logs, all `status: unprocessed`, and no `docs/context/wiki.md`. Knowledge is being captured and never synthesized, which matters directly for the north star: repeat-correction rate is computed over corroborated learnings, and learnings are only corroborated by synthesis runs. **The north star has no input in a repo where synthesis does not run.**
 
 ## Key Flows
 
@@ -103,7 +115,10 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 - `tracking.enabled` and `telemetry.enabled` are `true` in this repository's `docs/workflow/config.yml`, and `docs/metrics/skills-YYYY-MM.jsonl` accumulates one line per skill invocation.
 - The skill-tracking payload carries a `branch` field alongside `ts`, `session_id`, `skill`, `workflow_step`, and `source`, so workflow sessions can be joined to pull-request outcomes without the emitter knowing about pull requests.
 - Each tracked skill records a terminal outcome for its session step, so an abandoned step is distinguishable from a completed one; step duration is derivable within a session.
-- Gate bypasses are recorded as metric events: `--no-receipt`, `Spec-Override:` commit trailers, and `Pin-Override:` commit trailers each emit an event carrying the gate or check bypassed.
+- Gate bypasses are recorded as metric events: `--no-receipt`, `Spec-Override:` commit trailers, and `Pin-Override:` commit trailers each emit an event carrying the gate or check bypassed. Field data shows stamps applied without a corresponding skill run, currently detectable only through free-text `detail`, so this signal cannot depend on an agent choosing to describe it.
+- The `detail` field is either constrained to a controlled vocabulary per event type, or documented as human-readable annotation that no aggregation may group by. Observed usage carries at least ten spellings of a single activity, so the current schema cannot support grouping.
+- Reporting states synthesis cadence alongside the north star. Repeat-correction rate is computed over corroborated learnings, corroboration happens only during synthesis, and a repo whose sessions stay unprocessed produces a repeat-correction rate with no input rather than a rate of zero.
+- Enabling `tracking` in config is distinguishable from tracking actually emitting. The emit lives in installed skill bodies, so a repo can hold `tracking.enabled: true` while its installed skills predate the emit and silently produce nothing.
 - Repeat-correction rate and correction capture rate are defined with explicit numerators, denominators, and a stated method for judging two corrections equivalent; neither is reported in any view that omits the other.
 - Reporting states, for every metric, whether it is inflatable by running more workflow, and no metric so marked is used as a success measure.
 - The measurement layer adds no network call and no credential requirement to a developer machine; any outbound transmission happens in CI.
