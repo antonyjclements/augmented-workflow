@@ -21,5 +21,8 @@
 # Local behavior pin worktrees and run logs
 .aw/pin/
 
+# Per-checkout skill tracking session id (aw-gate.js track)
+.aw/session
+
 # npm dependencies (husky)
 node_modules/
