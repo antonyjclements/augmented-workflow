@@ -38,6 +38,29 @@ version has no entry here.
   exempts nothing. The exemption travels with the artifact rather than living in
   a list inside the tool, which cannot know a consuming repo's exceptions.
 
+- `node .scripts/aw-gate.js validate`, and the same checks inside `check`:
+  **derived-state validation**. Registries and the context wiki are generated
+  from source artifacts, so they drift silently — an index entry pointing at a
+  renamed file, a feature spec never indexed, a wiki reference that no longer
+  resolves, a durable artifact citing a session by path after retention deleted
+  the log. Nothing fails at runtime; an agent just follows a pointer to a file
+  that is not there.
+
+  These rules lived only in `scripts/test-install.sh`, which never runs in a
+  consuming repo. `validate` needs no gate state and does not read
+  `gates.enabled`, so it works in a repo that has not adopted gates; `check`
+  runs the same checks, so an existing hook picks them up with no wiring change.
+
+  Index parsing accepts a narrow, workflow-generated shape and **reports what it
+  cannot parse instead of guessing**, because a validator that silently
+  misparses reports safety it does not provide.
+
+  `scripts/test-install.sh` now delegates these checks to the shipped helper
+  rather than reimplementing them in Ruby. The duplicated pair had already
+  drifted — the script exempted a grandfathered learning by hardcoded filename
+  while the helper used an in-file marker. A product test that reimplements the
+  product cannot catch the product being wrong.
+
 - `docs/features/workflow-effectiveness/spec.md` — a living spec defining what
   successful Augmented Workflow means and how it is measured, covering the metric
   tiers, the repeat-correction north star and its capture-rate guardrail, session
