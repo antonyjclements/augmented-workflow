@@ -171,6 +171,39 @@ nothing. The exemption lives in the file rather than in a list inside the tool
 so that it travels with the artifact and has to be justified in the diff where a
 reviewer will see it.
 
+`check` additionally validates **derived state** — registries and the context
+wiki are generated from source artifacts, so they drift silently and nothing
+fails at runtime; an agent simply follows a pointer to a file that is not there.
+It reports:
+
+- an `index.yml` entry whose `path` or `spec` names a file that no longer exists
+- a `docs/features/*/spec.md` with no entry in `docs/features/index.yml`
+- a learning, standard, or wiki citing a session by **path** rather than by
+  identifier (retention deletes the log, so the link dangles)
+- a wiki reference to a `docs/`, `scripts/`, or `skills/` path that is missing
+- an `index.yml` this tool cannot parse
+
+Index files are workflow-generated, so the parser accepts a narrow shape and
+**reports what it does not recognize instead of guessing** — a validator that
+silently misparses would report safety it does not provide. The shape is a
+top-level `<name>:` key over a block list of maps (`  - key: value`,
+continuation `    key: value`, nested lists `      - item`), or `<name>: []`.
+Scalar keys beside the list are accepted and not inspected.
+
+### `validate`
+
+The same derived-state and audit-trail checks, without the freshness gates:
+
+```bash
+node .scripts/aw-gate.js validate
+```
+
+Exit **0** means derived state is consistent; exit **1** lists what drifted.
+Unlike `check` it does not read `gates.enabled` and needs no recorded state, so
+it works in a repo that has not adopted gates at all. `check` runs these checks
+too, so wiring `validate` separately is only worth it if you want registry
+validation without gate freshness.
+
 ### `org-sync`
 
 Shallow-clones or updates the configured org knowledge repo into the git-ignored

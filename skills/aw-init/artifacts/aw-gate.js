@@ -15,6 +15,12 @@
 //                   paths changed since the recorded commit), or both. Exits 0
 //                   when gates.enabled is false. Deterministic; needs no agent.
 //                   Wire it into a pre-commit/pre-push hook or a CI job.
+//   validate        Fail (exit 1) when derived state has drifted: an index
+//                   entry pointing at a missing file, a feature spec absent
+//                   from the features index, a durable artifact citing a
+//                   session by path, a wiki reference that no longer exists,
+//                   or a learning with no audit trail. `check` runs these too;
+//                   this runs them alone, without needing gate state.
 //   org-sync        Shallow clone/update the org-shared knowledge repo into a
 //                   git-ignored cache dir so skills can read it as a second tier.
 //   prune-telemetry Delete telemetry and tracking month shards older than
@@ -933,6 +939,218 @@ function learningAuditFailures() {
   return failures;
 }
 
+// --- Derived-state validation --------------------------------------------
+// Registries and the context wiki are generated from source artifacts, so they
+// drift silently: a spec is added and never indexed, a decision file is renamed
+// and its index entry dangles, retention deletes a session log a learning still
+// links to. None of that fails anything at runtime — an agent simply follows a
+// pointer to a file that is not there.
+//
+// These checks live here rather than only in scripts/test-install.sh for the
+// same reason the learning audit trail does: that script runs in the
+// augmented-workflow repo and its test-install targets, never in a consuming
+// repo, which is where these registries actually accumulate.
+
+// Index files are workflow-generated (aw-refresh), so their shape is known and
+// narrow. This parser refuses what it does not recognize instead of guessing:
+// the config reader's partial-YAML approach is safe for a file this workflow
+// controls end to end, but a validator that silently misparses would report
+// safety it does not provide — the failure docs/standards/guard-verification.md
+// exists to prevent.
+const INDEX_SHAPE_HELP =
+  'expected a top-level "<name>:" key over a block list of maps ' +
+  '("  - key: value", continuation "    key: value", nested lists "      - item"), or "<name>: []"';
+
+function stripYamlQuotes(s) {
+  const t = String(s).trim();
+  if (t.length >= 2 && ((t[0] === '"' && t[t.length - 1] === '"') || (t[0] === "'" && t[t.length - 1] === "'"))) {
+    return t.slice(1, -1);
+  }
+  return t;
+}
+
+function parseIndexFile(text) {
+  const lines = text.split(/\r?\n/);
+  const entries = [];
+  let sawTopKey = false;
+  let entry = null;
+  for (let i = 0; i < lines.length; i += 1) {
+    const raw = lines[i];
+    if (raw.trim() === '' || /^\s*#/.test(raw)) continue;
+    if (/^ *\t/.test(raw)) return { error: `line ${i + 1}: tab used for indentation` };
+    const indent = raw.match(/^ */)[0].length;
+    const body = raw.slice(indent);
+
+    if (indent === 0) {
+      const m = /^([A-Za-z0-9_.-]+):\s*(.*)$/.exec(body);
+      if (!m) return { error: `line ${i + 1}: expected a top-level "<name>:" key` };
+      // A scalar sibling of the list (`last_reviewed: 2026-01-01`) is ordinary
+      // YAML and carries no file references — accepted and not inspected, the
+      // same way the registry's non-list values were always skipped.
+      sawTopKey = true;
+      entry = null;
+      continue;
+    }
+    if (!sawTopKey) return { error: `line ${i + 1}: indented content before any top-level key` };
+
+    if (indent === 2 && body.startsWith('- ')) {
+      const m = /^-\s+([A-Za-z0-9_.-]+):\s*(.*)$/.exec(body);
+      if (!m) return { error: `line ${i + 1}: list item must open a map ("- key: value")` };
+      entry = {};
+      entry[m[1]] = stripYamlQuotes(m[2]);
+      entries.push(entry);
+      continue;
+    }
+    if (indent === 4) {
+      const m = /^([A-Za-z0-9_.-]+):\s*(.*)$/.exec(body);
+      if (!m) return { error: `line ${i + 1}: expected "key: value" inside a list item` };
+      if (!entry) return { error: `line ${i + 1}: field outside any list item` };
+      entry[m[1]] = stripYamlQuotes(m[2]);
+      continue;
+    }
+    // A nested list under a field (tags, reviewers). Its items carry no file
+    // references, so they are structurally accepted and not inspected.
+    if (indent === 6 && body.startsWith('- ')) continue;
+    return { error: `line ${i + 1}: unrecognized indentation (${indent} spaces)` };
+  }
+  return { entries };
+}
+
+function findFilesNamed(dir, name, out) {
+  const acc = out || [];
+  let items;
+  try {
+    items = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (e) {
+    return acc;
+  }
+  for (const item of items) {
+    const full = path.join(dir, item.name);
+    if (item.isDirectory()) findFilesNamed(full, name, acc);
+    else if (name === null || item.name === name) acc.push(full);
+  }
+  return acc;
+}
+
+function readIfFile(file) {
+  try {
+    if (!fs.statSync(file).isFile()) return null;
+    return fs.readFileSync(file, 'utf8');
+  } catch (e) {
+    return null;
+  }
+}
+
+function derivedStateFailures() {
+  const failures = [];
+  const docsDir = path.join(repoRoot, 'docs');
+  const indexEntries = new Map();
+
+  for (const index of findFilesNamed(docsDir, 'index.yml').sort()) {
+    const rel = path.relative(repoRoot, index);
+    const text = readIfFile(index);
+    if (text === null) continue;
+    const parsed = parseIndexFile(text);
+    if (parsed.error) {
+      failures.push(`${rel}: ${parsed.error} — ${INDEX_SHAPE_HELP}`);
+      continue;
+    }
+    indexEntries.set(rel, parsed.entries);
+    for (const entry of parsed.entries) {
+      // `path` is the common file-reference key; the features index uses `spec`.
+      for (const key of ['path', 'spec']) {
+        const ref = entry[key];
+        if (typeof ref !== 'string' || !ref.startsWith('docs/')) continue;
+        if (!fs.existsSync(path.join(repoRoot, ref))) {
+          failures.push(`${rel}: indexed path missing: ${ref}`);
+        }
+      }
+    }
+  }
+
+  // Every living feature spec must be discoverable through the features index —
+  // an unindexed spec is invisible to any agent that starts from the registry.
+  const featuresRel = 'docs/features/index.yml';
+  const featureEntries = indexEntries.get(featuresRel);
+  if (featureEntries) {
+    const indexed = new Set();
+    for (const entry of featureEntries) {
+      for (const key of ['path', 'spec']) {
+        if (typeof entry[key] === 'string') indexed.add(entry[key]);
+      }
+    }
+    let dirs = [];
+    try {
+      dirs = fs.readdirSync(path.join(docsDir, 'features'), { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name)
+        .sort();
+    } catch (e) {
+      dirs = [];
+    }
+    for (const dir of dirs) {
+      const rel = `docs/features/${dir}/spec.md`;
+      if (!fs.existsSync(path.join(repoRoot, rel))) continue;
+      if (!indexed.has(rel)) failures.push(`${featuresRel}: spec not indexed: ${rel}`);
+    }
+  }
+
+  // Durable artifacts outlive session logs by design: synthesis deletes
+  // processed logs past its retention window, so a docs/sessions/ path written
+  // into one becomes a dangling reference — a link that looks like an audit
+  // trail and is not one. Identifiers stay resolvable through git history.
+  const durable = [
+    ...findFilesNamed(path.join(docsDir, 'learnings'), null, []),
+    ...findFilesNamed(path.join(docsDir, 'standards'), null, []),
+  ];
+  const wikiPath = path.join(docsDir, 'context', 'wiki.md');
+  const durableFiles = durable.filter((f) => f.endsWith('.md'));
+  if (fs.existsSync(wikiPath)) durableFiles.push(wikiPath);
+  for (const file of durableFiles.sort()) {
+    const text = readIfFile(file);
+    if (text === null) continue;
+    const rel = path.relative(repoRoot, file);
+    const refs = new Set(text.match(/docs\/sessions\/[0-9A-Za-z._-]+\.md/g) || []);
+    for (const ref of [...refs].sort()) {
+      failures.push(
+        `${rel}: cites a session by path (${ref}) — cite the identifier YYYY-MM-DD-<slug>, retention deletes the log`
+      );
+    }
+  }
+
+  // The wiki is regenerated state; every repo path it points at must exist.
+  const wikiText = readIfFile(wikiPath);
+  if (wikiText !== null) {
+    const rel = path.relative(repoRoot, wikiPath);
+    const refs = new Set(
+      (wikiText.match(/`(?:docs|scripts|skills)\/[^`<>\s]+`/g) || []).map((m) => m.slice(1, -1))
+    );
+    for (const ref of [...refs].sort()) {
+      if (!fs.existsSync(path.join(repoRoot, ref))) {
+        failures.push(`${rel}: referenced path missing: ${ref}`);
+      }
+    }
+  }
+
+  return failures;
+}
+
+// Validation without the freshness gates. `check` runs these too, so a
+// consumer's existing hook picks them up with no wiring change; this exists so
+// the same rules can be applied to a repo that has no gate state at all —
+// scripts/test-install.sh validating a freshly installed target, or a repo
+// deciding to check derived state without adopting gates.
+function cmdValidate() {
+  const failures = [...learningAuditFailures(), ...derivedStateFailures()];
+  if (failures.length > 0) {
+    process.stderr.write('aw-gate: validation FAILED\n');
+    for (const f of failures) process.stderr.write(`  - ${f}\n`);
+    process.exit(1);
+  }
+  process.stdout.write('aw-gate: derived state and learning audit trail valid\n');
+  process.exit(0);
+}
+
 function cmdCheck(args) {
   const { flags } = parseFlags(args);
   const against = flags.against === 'worktree' ? 'worktree' : 'head';
@@ -944,7 +1162,7 @@ function cmdCheck(args) {
   }
   const checks = gates.checks || {};
   const names = Object.keys(checks);
-  const auditFailures = learningAuditFailures();
+  const auditFailures = [...learningAuditFailures(), ...derivedStateFailures()];
   if (names.length === 0 && auditFailures.length === 0) {
     process.stdout.write('aw-gate: no gates configured under gates.checks — nothing to enforce\n');
     process.exit(0);
@@ -2503,6 +2721,8 @@ function main() {
       return cmdRecord(rest);
     case 'check':
       return cmdCheck(rest);
+    case 'validate':
+      return cmdValidate();
     case 'trace':
       return cmdTrace(rest);
     case 'trace-annotate':
