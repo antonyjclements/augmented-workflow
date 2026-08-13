@@ -10,6 +10,39 @@ Changes before 0.6.0 predate this changelog; see git history and `docs/decisions
 for that record. `scripts/test-install.sh` fails if the current `aw-version.txt`
 version has no entry here.
 
+## [Unreleased]
+
+### Added
+
+- `node .scripts/aw-gate.js check` now validates the **learning audit trail** in
+  any repo with `gates.enabled: true`. Every `docs/learnings/*.md` must carry a
+  non-empty `derived-from`, and `evidence-count` must equal the number of
+  identifiers listed. A learning citing no session cannot be corroborated,
+  expired on schedule, or traced back to where the lesson came from.
+
+  Both rules already existed in `scripts/test-install.sh`, which runs only in the
+  augmented-workflow repo and its test-install targets — never in a consuming
+  repo, which is where learnings accumulate. The rule was enforced where the data
+  does not exist and unenforced where it does.
+
+  **This can fail a previously passing `check`.** The usual cause is a learning
+  written mid-session by `aw-capture learning`: a session log and its
+  `YYYY-MM-DD-<slug>` identifier are not created until the session ends, so at
+  capture time there was nothing to cite. Fix by adding the identifier of the
+  originating session and correcting `evidence-count` to match. A repo with no
+  `docs/learnings/` directory is unaffected, as is one with `gates.enabled: false`.
+
+  A learning that genuinely has no session to cite — written before the repo
+  adopted the memory loop, or imported from elsewhere — is exempted in the file
+  itself with `audit-trail-exempt: <reason>`. The reason is required; a bare key
+  exempts nothing. The exemption travels with the artifact rather than living in
+  a list inside the tool, which cannot know a consuming repo's exceptions.
+
+- `docs/features/workflow-effectiveness/spec.md` — a living spec defining what
+  successful Augmented Workflow means and how it is measured, covering the metric
+  tiers, the repeat-correction north star and its capture-rate guardrail, session
+  identity for the audit trail, and deferred cross-session misalignment detection.
+
 ## [0.11.0] - 2026-07-27
 
 ### Added

@@ -98,6 +98,27 @@ Agreement between the two yields a causal story neither supports alone. Disagree
 
 The two analyses share no pipeline and may be built independently, in either order.
 
+### Session identity and the audit trail
+
+The audit-trail gap is closed by giving a learning something resolvable to cite at the moment it is written. Skill tracking already mints a session UUID into `tracking.session_file` (`.aw/session`) at the first skill invocation and reuses it while the file's mtime is within `tracking.session_ttl_hours`. That identity exists earlier than the session log's content-derived slug, which is exactly the property the capture path needs.
+
+The contract has three parts:
+
+1. `aw-capture learning` cites the current session UUID in `derived-from` when no session log exists yet, satisfying the non-empty requirement with a token that can actually be resolved.
+2. `aw-capture session` records the same UUID in the session log's frontmatter when it writes the log.
+3. `aw-synthesize-memory` resolves each UUID to the log's `YYYY-MM-DD-<slug>` identifier and rewrites `derived-from` in place.
+
+The UUID is therefore a **temporary correlation token, never the durable citation**. Durable artifacts still cite `YYYY-MM-DD-<slug>`, which stays resolvable through git history after retention deletes the log — the existing rule is unchanged, and paths remain forbidden.
+
+**Whether this helps a multi-developer team.** It helps, but not in the way the name suggests, and the limits matter:
+
+- The UUID identifies a *session*, not a *person*. It does not provide author attribution, which remains a separate phase-3 concern.
+- Being random and per-checkout, UUIDs cannot collide across developers, so two people working the same feature on the same day get distinct session identities where a date-plus-slug scheme could merge them. No server, shared counter, or coordination is required.
+- Being git-ignored costs nothing here: the token only needs to survive from capture to synthesis within one repo, and it becomes durable the moment a committed session log records it.
+- **Known conflation:** agents running concurrently in the *same* checkout share one `.aw/session` and merge into a single session identity. `docs/workflow/tracking.md` already notes this. Separate worktrees per developer avoid it; concurrent agents in one worktree do not, and that case is getting more common.
+- The TTL makes grouping approximate in both directions: a session spanning the boundary splits into two identities, and two unrelated sessions inside the window merge into one.
+- **A cited UUID that never resolves is worse than an empty field**, because it looks like an audit trail. This happens whenever no session log is written — the Stop hook did not fire and nobody ran `aw-capture session`. Synthesis must report unresolved UUIDs rather than dropping them silently.
+
 ### Cross-session misalignment
 
 A distinct question from effectiveness: not "is the workflow working" but "are two people pulling in different directions through it". Deferred to phase 3, recorded here because the phase-1 clustering decision determines whether it is cheap or expensive.
@@ -141,8 +162,10 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 - Each tracked skill records a terminal outcome for its session step, so an abandoned step is distinguishable from a completed one; step duration is derivable within a session.
 - Gate bypasses are recorded as metric events: `--no-receipt`, `Spec-Override:` commit trailers, and `Pin-Override:` commit trailers each emit an event carrying the gate or check bypassed. Field data shows stamps applied without a corresponding skill run, currently detectable only through free-text `detail`, so this signal cannot depend on an agent choosing to describe it.
 - The `detail` field is either constrained to a controlled vocabulary per event type, or documented as human-readable annotation that no aggregation may group by. Observed usage carries at least ten spellings of a single activity, so the current schema cannot support grouping.
-- A learning written mid-session by `aw-capture learning` can cite a resolvable session identifier at the moment it is written. Today it cannot: the session log is created at session end and its slug is unpredictable earlier, so every correction-triggered learning loses its audit trail — the exact class the north star is computed over.
-- The `derived-from` and `evidence-count` guards run where the data accumulates. They currently execute only in this repository and its test-install targets, so a consuming repo can violate both indefinitely without any check failing.
+- A learning written mid-session by `aw-capture learning` cites the current `tracking.session_file` UUID, `aw-capture session` records that UUID in the session log's frontmatter, and `aw-synthesize-memory` resolves it to the log's `YYYY-MM-DD-<slug>` identifier and rewrites `derived-from` in place. Durable artifacts continue to cite the slug identifier, never the UUID and never a path.
+- `aw-synthesize-memory` reports session UUIDs in `derived-from` that resolve to no session log instead of dropping them. An unresolvable token looks like an audit trail and is worse than an empty field.
+- The `derived-from` and `evidence-count` guards run where the data accumulates. `node .scripts/aw-gate.js check` enforces both in any repo with `gates.enabled: true`, so a consuming repo can no longer violate them indefinitely — `scripts/test-install.sh` alone never executes there.
+- A learning with no session to cite is exempted in the learning itself through `audit-trail-exempt: <reason>`, never through a list inside the tool. A bare key with no reason exempts nothing, so silencing the guard requires a justification visible in the diff.
 - Reporting states synthesis cadence alongside the north star. Repeat-correction rate is computed over corroborated learnings, corroboration happens only during synthesis, and a repo whose sessions stay unprocessed produces a repeat-correction rate with no input rather than a rate of zero.
 - Enabling `tracking` in config is distinguishable from tracking actually emitting. The emit lives in installed skill bodies, so a repo can hold `tracking.enabled: true` while its installed skills predate the emit and silently produce nothing.
 - Repeat-correction rate and correction capture rate are defined with explicit numerators, denominators, and a stated method for judging two corrections equivalent; neither is reported in any view that omits the other.
@@ -165,7 +188,7 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 
 - **Blocking (phase 1):** how are two corrections judged "the same"? Tag-based clustering over `docs/learnings/` frontmatter is cheapest and reproducible; embedding similarity is more accurate and less auditable. The north star is undefined until this is settled.
 - **Blocking (phase 1):** is the correction denominator per session, per PR, or per merged change? Raw counts fall when less work happens, which would read as false improvement.
-- **Blocking (phase 1):** how does a mid-session learning obtain a session identifier? The leading candidate is already in the tree — skill tracking mints a session UUID into `tracking.session_file` at the first skill invocation and reuses it within `session_ttl_hours`. If session logs adopted that same identity instead of minting a content-derived slug at session end, capture-time learnings could cite it and `derived-from` would resolve for free. This unifies two session identities that exist today for unrelated reasons, so it needs a decision rather than an assumption.
+- **Deferred:** whether concurrent agents in a single checkout should get distinct session identities. They share one `.aw/session` today and merge into one session, which understates parallel work and blurs any later attribution. Splitting them needs a per-agent token the harness does not currently provide.
 - **Deferred (phase 3):** author attribution on session logs and learnings. Required before any misalignment detection; also the point at which measurement starts describing people rather than a workflow, so it deserves its own decision rather than arriving as a side effect.
 - **Deferred (phase 3):** whether the learning lifecycle gains a `contradicted` outcome distinct from `expired`. Cheap to add, but meaningless until correction polarity can be judged, which depends on the phase-1 equivalence method.
 - **Deferred:** read-through instrumentation — whether agents actually open `docs/learnings/`, `docs/standards/`, and specs before working. Writes are measured, reads are not, which leaves the compounding mechanism partly unfalsifiable. Design cost is materially higher than every other gap here.
