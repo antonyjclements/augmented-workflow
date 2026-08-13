@@ -51,6 +51,12 @@ The 59-event sample is small and single-repo, but it disproves two assumptions w
 
 **Gate stamping without a corresponding skill run happens, and is currently visible only by accident.** Four events on the same day carry the detail `artificial stamp after initial push` — one per configured gate. That is an honest self-report of exactly the behaviour proof-of-work receipts exist to prevent, and it survived into the record only because someone typed it into a free-text field. It is direct evidence for the structured bypass events specified below, rather than a hypothesis about them.
 
+**The audit trail is systematically missing for exactly the learnings the north star runs on.** In the same repo, three of five learnings carry `derived-from: []` with `evidence-count: 1` — a combination the spec already forbids. The pattern is not random. Learnings written by `aw-synthesize-memory` (`trigger: dead-end`, `post-completion-feedback`) have complete identifier lists; every learning written live by `aw-capture learning` (`trigger: correction`) has an empty one.
+
+The cause is structural, not carelessness. `aw-capture learning` fires mid-session at the moment of correction, but a session log is written at session end and its identifier (`YYYY-MM-DD-<slug>`) is derived from the session's content at that point. At capture time the log does not exist and its slug cannot be predicted, so the agent can either invent an identifier that probably will not match the eventual log, or leave the field empty. Empty is the more honest failure, and it is the one that occurs. `aw-capture`'s skill body names `derived-from` only inside its output template and gives no instruction for this case.
+
+The consequence lands precisely on the north star: repeat-correction rate is computed over corrections, and corrections are the one class of learning with no traceable link back to a session — or, transitively, to an author. Two guards exist for this (`scripts/test-install.sh` fails on empty `derived-from` and on an `evidence-count` mismatch) but run only in this repository and its test-install targets, never in a consuming repo, so the rule is enforced where the data does not accumulate and unenforced where it does.
+
 **The compounding stage is the least-exercised part of the loop.** In the same sample `capture` fired 19 times and `synthesize` once — and that single event is one of the artificial stamps. That repo has six session logs, all `status: unprocessed`, and no `docs/context/wiki.md`. Knowledge is being captured and never synthesized, which matters directly for the north star: repeat-correction rate is computed over corroborated learnings, and learnings are only corroborated by synthesis runs. **The north star has no input in a repo where synthesis does not run.**
 
 ## Key Flows
@@ -92,6 +98,24 @@ Agreement between the two yields a causal story neither supports alone. Disagree
 
 The two analyses share no pipeline and may be built independently, in either order.
 
+### Cross-session misalignment
+
+A distinct question from effectiveness: not "is the workflow working" but "are two people pulling in different directions through it". Deferred to phase 3, recorded here because the phase-1 clustering decision determines whether it is cheap or expensive.
+
+It is not answerable today, and the blocker is identity rather than analysis. No session log or learning records an author — the only attribution is git commit authorship, which is weak here because session logs are often committed in batches by whoever ran synthesis, and synthesis deletes them at fourteen days.
+
+Ranked by signal quality, what becomes detectable once identity resolves:
+
+- **Contradictory corrections** — one person corrects toward X, another toward not-X. The strongest signal, and nearly free: it reuses the north star's correction clustering, asking "same topic, opposite polarity" instead of "same correction". Whether that is cheap depends entirely on the phase-1 equivalence method.
+- **Corroboration failure, disambiguated** — the learning lifecycle already expires an uncorroborated learning after three runs, but cannot distinguish "nobody encountered this again" from "someone did the opposite". A `contradicted` outcome alongside `expired` would carry alignment signal at almost no cost.
+- **Decision churn** — a decision superseding a recent one, particularly by a different author. Already immutable, indexed, and understood by `aw-refresh decisions`; needs no new instrumentation.
+- **Contradictory learnings** — same clustering as corrections. Topic adjacency is not conflict: two learnings can share tags and be complementary rather than opposed, so polarity detection is the hard half, not retrieval.
+- **Rework and revert patterns** — available from git rather than session logs. Strongest evidence that something went wrong, weakest at explaining why.
+
+Terminology drift is excluded: the false-positive rate is too high to act on.
+
+Two constraints govern any implementation. Session logs are agent-written summaries of what an agent believed happened, so two logs can diverge because two agents summarised differently rather than because two people disagreed — output is therefore a **candidate for human adjudication, never a verdict**. And because this is the metric most likely to become interpersonal, reports name the conflict, not the people: "two contradictory corrections on backend configuration" is actionable, an assertion that two named engineers are misaligned is not.
+
 ### Ingest
 
 The emitter stays dumb, local, and network-free. The **outcome join happens in CI at merge time**, where pull-request context is already available, rather than by teaching the local emitter about pull requests. This preserves the property that makes AW enterprise-safe — no network calls and no credentials on developer machines — and reduces the local schema change to a single field.
@@ -117,6 +141,8 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 - Each tracked skill records a terminal outcome for its session step, so an abandoned step is distinguishable from a completed one; step duration is derivable within a session.
 - Gate bypasses are recorded as metric events: `--no-receipt`, `Spec-Override:` commit trailers, and `Pin-Override:` commit trailers each emit an event carrying the gate or check bypassed. Field data shows stamps applied without a corresponding skill run, currently detectable only through free-text `detail`, so this signal cannot depend on an agent choosing to describe it.
 - The `detail` field is either constrained to a controlled vocabulary per event type, or documented as human-readable annotation that no aggregation may group by. Observed usage carries at least ten spellings of a single activity, so the current schema cannot support grouping.
+- A learning written mid-session by `aw-capture learning` can cite a resolvable session identifier at the moment it is written. Today it cannot: the session log is created at session end and its slug is unpredictable earlier, so every correction-triggered learning loses its audit trail — the exact class the north star is computed over.
+- The `derived-from` and `evidence-count` guards run where the data accumulates. They currently execute only in this repository and its test-install targets, so a consuming repo can violate both indefinitely without any check failing.
 - Reporting states synthesis cadence alongside the north star. Repeat-correction rate is computed over corroborated learnings, corroboration happens only during synthesis, and a repo whose sessions stay unprocessed produces a repeat-correction rate with no input rather than a rate of zero.
 - Enabling `tracking` in config is distinguishable from tracking actually emitting. The emit lives in installed skill bodies, so a repo can hold `tracking.enabled: true` while its installed skills predate the emit and silently produce nothing.
 - Repeat-correction rate and correction capture rate are defined with explicit numerators, denominators, and a stated method for judging two corrections equivalent; neither is reported in any view that omits the other.
@@ -139,6 +165,9 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 
 - **Blocking (phase 1):** how are two corrections judged "the same"? Tag-based clustering over `docs/learnings/` frontmatter is cheapest and reproducible; embedding similarity is more accurate and less auditable. The north star is undefined until this is settled.
 - **Blocking (phase 1):** is the correction denominator per session, per PR, or per merged change? Raw counts fall when less work happens, which would read as false improvement.
+- **Blocking (phase 1):** how does a mid-session learning obtain a session identifier? The leading candidate is already in the tree — skill tracking mints a session UUID into `tracking.session_file` at the first skill invocation and reuses it within `session_ttl_hours`. If session logs adopted that same identity instead of minting a content-derived slug at session end, capture-time learnings could cite it and `derived-from` would resolve for free. This unifies two session identities that exist today for unrelated reasons, so it needs a decision rather than an assumption.
+- **Deferred (phase 3):** author attribution on session logs and learnings. Required before any misalignment detection; also the point at which measurement starts describing people rather than a workflow, so it deserves its own decision rather than arriving as a side effect.
+- **Deferred (phase 3):** whether the learning lifecycle gains a `contradicted` outcome distinct from `expired`. Cheap to add, but meaningless until correction polarity can be judged, which depends on the phase-1 equivalence method.
 - **Deferred:** read-through instrumentation — whether agents actually open `docs/learnings/`, `docs/standards/`, and specs before working. Writes are measured, reads are not, which leaves the compounding mechanism partly unfalsifiable. Design cost is materially higher than every other gap here.
 - **Deferred:** whether `aw-synthesize-memory` should compute and commit a periodic metrics rollup, or whether analysis stays wholly external to the repo.
 - **Deferred:** retention interaction — processed session logs are deleted after 14 days, so any correction-clustering method must operate on `docs/learnings/` `derived-from` identifiers rather than on session log bodies.
