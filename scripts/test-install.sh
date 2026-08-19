@@ -113,55 +113,19 @@ if [ "$dangling" -ne 0 ]; then
   exit 1
 fi
 
-# Durable artifacts outlive session logs by design: aw-synthesize-memory deletes
-# processed logs past its retention window. So a docs/sessions/ path written into a
-# learning, a standard, or the wiki becomes a dangling reference on a later run — a
-# link that looks like an audit trail and is not one. Cite sessions by identifier
-# (YYYY-MM-DD-<slug>), which stays resolvable through git history. Four learnings
-# carried dangling paths before this guard existed.
-session_refs=0
-while IFS= read -r durable; do
-  [ -e "$durable" ] || continue
-  while IFS= read -r ref; do
-    [ -n "$ref" ] || continue
-    echo "session path in durable artifact: ${durable#"$repo_root/"} references $ref" >&2
-    session_refs=1
-  done <<< "$(grep -o 'docs/sessions/[0-9A-Za-z._-]*\.md' "$durable" | sort -u)"
-done <<< "$(find "$repo_root/docs/learnings" "$repo_root/docs/standards" -name '*.md' 2>/dev/null; echo "$repo_root/docs/context/wiki.md")"
-if [ "$session_refs" -ne 0 ]; then
-  echo "cite sessions by identifier (YYYY-MM-DD-<slug>), not by path — retention deletes the logs" >&2
-  exit 1
-fi
-
-# A learning with no derived-from has no audit trail at all, which is the failure
-# the identifier scheme exists to avoid — blanking the list is not the fix for a
-# source log that aged out, since identifiers stay resolvable through git history.
-# Two learnings were blanked this way before the identifier scheme existed.
-# Learnings predating the memory loop (2026-07-02) have no session to cite; they are
-# listed here explicitly so an addition to this list has to be justified in the diff.
-learning_grandfathered="2026-05-24-blank-ticket-skill-is-opt-out.md"
-empty_derived=0
-while IFS= read -r learning; do
-  case " $learning_grandfathered " in *" $(basename "$learning") "*) continue ;; esac
-  count="$(awk '/^derived-from:/{f=1; if ($0 ~ /\[\]/) exit; next} f && /^  - /{c++; next} f && !/^  - /{exit} END{print c+0}' "$learning")"
-  if [ "${count:-0}" -eq 0 ]; then
-    echo "learning without audit trail: ${learning#"$repo_root/"} has an empty derived-from" >&2
-    empty_derived=1
-    continue
+# Session-path citations and the learning audit trail are validated by the
+# shipped helper rather than reimplemented here. These rules apply to any repo
+# using the workflow, so they belong in the tool consumers actually run; keeping
+# a second copy in this script is how the two drifted before — the script used a
+# hardcoded grandfather list while aw-gate.js used an in-file exemption marker.
+# The product test now verifies the shipped tool works instead of duplicating it.
+if command -v node >/dev/null 2>&1; then
+  if ! AW_REPO_ROOT="$repo_root" node "$repo_root/.scripts/aw-gate.js" validate; then
+    echo "aw-gate validate failed for this repository" >&2
+    exit 1
   fi
-  # evidence-count is the number of sessions that corroborated the learning, so it
-  # must equal the number of identifiers cited. A mismatch means an identifier was
-  # dropped without decrementing the count — which is exactly how two learnings
-  # silently lost sources during the path-to-identifier migration.
-  evidence="$(awk '/^evidence-count:/{print $2; exit}' "$learning")"
-  if [ "${evidence:-0}" != "$count" ]; then
-    echo "audit trail mismatch: ${learning#"$repo_root/"} has evidence-count $evidence but $count derived-from identifier(s)" >&2
-    empty_derived=1
-  fi
-done <<< "$(find "$repo_root/docs/learnings" -name '*.md' 2>/dev/null)"
-if [ "$empty_derived" -ne 0 ]; then
-  echo "cite at least one session identifier (YYYY-MM-DD-<slug>); aged-out logs keep theirs" >&2
-  exit 1
+else
+  echo "skip: aw-gate validate (node not available)" >&2
 fi
 
 # Skill bodies are loaded in full the moment the skill is invoked, so they carry
@@ -233,77 +197,19 @@ assert_not_contains() {
 # derived state; this is the drift guard that keeps them trustworthy.
 validate_docs_indexes() {
   local root="$1"
-  ruby -ryaml -rdate - "$root" <<'RUBY'
-root = File.expand_path(ARGV[0])
-failures = []
-
-def load_yaml(text)
-  YAML.safe_load(text, permitted_classes: [Date, Time, Symbol], aliases: true)
-rescue ArgumentError
-  YAML.safe_load(text, [Date, Time, Symbol], [], true)
-end
-
-Dir.glob(File.join(root, "docs", "**", "index.yml")).each do |index|
-  begin
-    data = load_yaml(File.read(index))
-  rescue StandardError => e
-    failures << "#{index}: invalid YAML (#{e.class}: #{e.message})"
-    next
-  end
-  unless data.is_a?(Hash)
-    failures << "#{index}: expected a top-level mapping"
-    next
-  end
-  data.each_value do |entries|
-    next unless entries.is_a?(Array)
-    entries.each do |entry|
-      next unless entry.is_a?(Hash)
-      # "path" is the common file-reference key; the features index uses "spec".
-      %w[path spec].each do |key|
-        ref = entry[key]
-        next unless ref.is_a?(String) && ref.start_with?("docs/")
-        unless File.exist?(File.join(root, ref))
-          failures << "#{index}: indexed path missing: #{ref}"
-        end
-      end
-    end
-  end
-end
-
-features_index = File.join(root, "docs", "features", "index.yml")
-if File.exist?(features_index)
-  indexed = []
-  begin
-    data = load_yaml(File.read(features_index))
-    if data.is_a?(Hash)
-      indexed = data.values.select { |v| v.is_a?(Array) }.flatten
-                    .select { |e| e.is_a?(Hash) }
-                    .flat_map { |e| [e["path"], e["spec"]] }.compact
-    end
-  rescue StandardError
-  end
-  Dir.glob(File.join(root, "docs", "features", "*", "spec.md")).each do |spec|
-    rel = spec.sub(root + "/", "")
-    failures << "#{features_index}: spec not indexed: #{rel}" unless indexed.include?(rel)
-  end
-end
-
-# The context wiki is derived state too: every repo path it references
-# (backticked docs/, scripts/, skills/ tokens) must exist.
-wiki = File.join(root, "docs", "context", "wiki.md")
-if File.exist?(wiki)
-  File.read(wiki, encoding: "UTF-8").scan(/`((?:docs|scripts|skills)\/[^`<>\s]+)`/).flatten.uniq.each do |ref|
-    unless File.exist?(File.join(root, ref))
-      failures << "#{wiki}: referenced path missing: #{ref}"
-    end
-  end
-end
-
-unless failures.empty?
-  failures.each { |f| warn f }
-  abort "docs index validation failed for #{root}"
-end
-RUBY
+  # One implementation, in the tool consumers actually run. This script used to
+  # carry a second copy in Ruby; the two rules that existed in both had already
+  # drifted apart, and a product test that reimplements the product cannot catch
+  # the product being wrong.
+  if ! command -v node >/dev/null 2>&1; then
+    echo "skip: docs index validation for $root (node not available)" >&2
+    return 0
+  fi
+  if ! AW_REPO_ROOT="$root" node "$repo_root/.scripts/aw-gate.js" validate >/dev/null; then
+    AW_REPO_ROOT="$root" node "$repo_root/.scripts/aw-gate.js" validate >&2 || true
+    echo "docs index validation failed for $root" >&2
+    exit 1
+  fi
 }
 
 assert_repo_install() {

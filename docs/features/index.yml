@@ -9,3 +9,12 @@ features:
       - decisions
       - migrations
       - testing
+  - key: workflow-effectiveness
+    title: Workflow Effectiveness Measurement
+    spec: docs/features/workflow-effectiveness/spec.md
+    status: draft
+    tags:
+      - metrics
+      - telemetry
+      - evaluation
+      - governance

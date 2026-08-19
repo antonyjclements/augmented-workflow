@@ -109,14 +109,14 @@ gates:
       mode: age
       max_age_hours: 336
 tracking:
-  enabled: false
+  enabled: true
   path: docs/metrics/skills.jsonl
   rotation: monthly
   retention_months: 12
   session_file: .aw/session
   session_ttl_hours: 8
 telemetry:
-  enabled: false
+  enabled: true
   path: docs/metrics/events.jsonl
   rotation: monthly
   retention_months: 12
@@ -128,7 +128,7 @@ org_knowledge:
     learnings: learnings
     standards: standards
 trace:
-  enabled: false
+  enabled: true
   spec_paths:
     - "docs/features/*/spec.md"
   test_paths:

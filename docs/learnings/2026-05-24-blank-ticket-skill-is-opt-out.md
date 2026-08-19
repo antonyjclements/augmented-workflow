@@ -7,6 +7,7 @@ status: active
 evidence-count: 1
 unconfirmed-runs: 0
 derived-from: []
+audit-trail-exempt: predates the memory loop (2026-07-02); no session log exists to cite
 tags:
   - workflow
   - tickets
