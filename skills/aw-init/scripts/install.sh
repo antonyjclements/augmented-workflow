@@ -228,6 +228,36 @@ copy_agents_prompted() {
   rm -f "$temp_file"
 }
 
+install_agentic_workflows() {
+  if ! command -v aw >/dev/null 2>&1; then
+    if [ ! -t 0 ]; then
+      echo "agentic workflows skip: aw-cli is not installed (run: pipx install git+https://github.com/antonyjclements/aw-cli.git)"
+      return 0
+    fi
+
+    printf 'aw-cli is not installed. Install it with pipx now? [y/N] ' >&2
+    local answer
+    read -r answer
+    case "$answer" in
+      y|Y|yes|YES)
+        if ! command -v pipx >/dev/null 2>&1; then
+          echo "agentic workflows skip: pipx is required to install aw-cli" >&2
+          return 0
+        fi
+        pipx install git+https://github.com/antonyjclements/aw-cli.git
+        hash -r
+        ;;
+      *)
+        echo "agentic workflows skip: aw-cli was not installed"
+        return 0
+        ;;
+    esac
+  fi
+
+  (cd "$repo_dir" && aw init)
+  echo "agentic workflows: initialized $repo_dir"
+}
+
 write_file_if_missing() {
   local dest="$1"
   local content="$2"
@@ -537,159 +567,7 @@ install_repo_files() {
   copy_prompted "$artifact_dir/org-knowledge.md" "$repo_dir/docs/workflow/org-knowledge.md"
   copy_prompted "$artifact_dir/tracking.md" "$repo_dir/docs/workflow/tracking.md"
   copy_prompted "$artifact_dir/metrics-readme.md" "$repo_dir/docs/metrics/README.md"
-  write_file_if_missing "$repo_dir/docs/workflow/config.yml" "workflow:
-  implementation:
-    test_policy: acceptance-first
-  steps:
-    prd:
-      skill: \"\"
-    brainstorm:
-      skill: \"\"
-    create_spec:
-      skill: \"\"
-    request_human_review:
-      skill: \"\"
-    plan:
-      skill: \"\"
-    review:
-      skill: \"\"
-    create_tickets:
-      skill: \"\"
-    work:
-      skill: \"\"
-    check_workflow_compliance:
-      skill: \"\"
-    commit:
-      skill: \"\"
-    commit_push_pr:
-      skill: \"\"
-    monitor_pipeline:
-      skill: \"\"
-  auxiliary:
-    refresh:
-      skill: \"\"
-    debug:
-      skill: \"\"
-    create_worktree:
-      skill: \"\"
-    capture:
-      skill: \"\"
-    discover_standards:
-      skill: \"\"
-    research_slack:
-      skill: \"\"
-    pin_behavior:
-      skill: \"\"
-    e2e_tests:
-      skill: \"\"
-    resolve_pr_feedback:
-      skill: \"\"
-    synthesize_memory:
-      skill: \"\"
-  design:
-    enabled: false
-    reference_paths:
-      - docs/standards
-    hooks:
-      discovery:
-        skill: \"\"
-      spec_review:
-        skill: \"\"
-      plan_review:
-        skill: \"\"
-      implementation_review:
-        skill: \"\"
-      pre_pr:
-        skill: \"\"
-pull_request:
-  template:
-    title: \"\"
-    body: \"\"
-git:
-  commit:
-    format: conventional
-    scope_required: false
-    template: \"<type>(<scope>): <description>\"
-    allowed_types:
-      - feat
-      - fix
-      - docs
-      - chore
-      - refactor
-      - test
-      - ci
-      - build
-      - perf
-      - style
-    examples:
-      - \"docs(readme): update usage guide\"
-post_pr:
-  ci_monitor:
-    provider: manual
-human_review:
-  spec:
-    reviewers: []
-  plan:
-    reviewers: []
-gates:
-  enabled: false
-  require_receipt: true
-  state_file: .aw-gate-state.json
-  checks:
-    review:
-      max_age_hours: 24
-    capture:
-      max_age_hours: 168
-    check_workflow_compliance:
-      max_age_hours: 24
-    synthesize:
-      mode: age
-      max_age_hours: 336
-telemetry:
-  enabled: false
-  path: docs/metrics/events.jsonl
-  rotation: monthly
-  retention_months: 12
-org_knowledge:
-  source: \"\"
-  ref: main
-  cache_dir: .aw-org-cache
-  paths:
-    learnings: learnings
-    standards: standards
-trace:
-  enabled: false
-  spec_paths:
-    - \"docs/features/*/spec.md\"
-  test_paths:
-    - \"*.feature\"
-    - \"*.test.ts\"
-    - \"*.test.tsx\"
-    - \"*.spec.ts\"
-  code_paths:
-    - \"src\"
-  require_code_anchor: false
-pin:
-  enabled: false
-  manifest_paths:
-    - \"docs/features/*/behavior-pin.yml\"
-  worktree_dir: .aw/pin
-  out: .aw/pin/equivalence.json
-  timeout_seconds: 900
-e2e:
-  enabled: false
-  trigger_paths: []
-  test_paths: []
-  run_scope: affected
-workflow_trace:
-  enabled: false
-  path: .aw/workflow-trace.jsonl
-  max_events: 10000
-  max_bytes: 5242880
-  require_tier: true
-  required_gates:
-    - review
-    - check_workflow_compliance"
+  copy_prompted "$artifact_dir/config.yml" "$repo_dir/docs/workflow/config.yml"
 }
 
 install_gate_script() {
@@ -804,6 +682,7 @@ fi
 if [ "$skip_repo" -ne 1 ]; then
   install_repo_files
   install_claude_hooks
+  install_agentic_workflows
   if [ "$with_gates" -eq 1 ]; then
     install_gate_script
   fi
@@ -834,4 +713,6 @@ Next steps:
 8. Optional enforcement, telemetry, org knowledge, traceability, workflow trace, and behavior pins (see docs/workflow/README.md):
    Re-run install with --with-gates to add .scripts/aw-gate.js. Set gates.enabled/telemetry.enabled/org_knowledge.source/trace.enabled/workflow_trace.enabled/pin.enabled
    in docs/workflow/config.yml, then wire \`node .scripts/aw-gate.js check\` and optionally \`trace\` / \`pin\` into a pre-push hook or CI job.
+9. aw-cli initializes the target repo with \`aw init\` when available. To add it later, run:
+   pipx install git+https://github.com/antonyjclements/aw-cli.git && aw init
 EOF

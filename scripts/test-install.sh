@@ -192,6 +192,16 @@ assert_not_contains() {
   fi
 }
 
+assert_equal() {
+  local actual="$1"
+  local expected="$2"
+  local label="$3"
+  if [ "$actual" != "$expected" ]; then
+    echo "$label: expected '$expected', got '$actual'" >&2
+    exit 1
+  fi
+}
+
 # Validate docs/ indexes: every index.yml parses, every indexed path exists,
 # and every docs/features/*/spec.md has a features index entry. Indexes are
 # derived state; this is the drift guard that keeps them trustworthy.
@@ -239,6 +249,10 @@ assert_repo_install() {
   # directory has to exist in installed repos rather than only in the docs.
   assert_file "$target_repo/docs/solutions/README.md"
   assert_file "$target_repo/docs/workflow/config.yml"
+  if ! diff -q "$target_repo/docs/workflow/config.yml" "$repo_root/skills/aw-init/artifacts/config.yml" > /dev/null; then
+    echo "installed workflow config does not match aw-init artifact" >&2
+    exit 1
+  fi
   assert_contains "$target_repo/docs/workflow/README.md" "Workflow Config"
   assert_contains "$target_repo/docs/workflow/README.md" "Schema"
   assert_contains "$target_repo/docs/workflow/README.md" "workflow.steps"
@@ -309,6 +323,24 @@ validate_docs_indexes "$repo_root"
 export HOME="$tmp_root/home"
 mkdir -p "$HOME"
 
+# A shim lets the installer exercise a locally available aw-cli without a
+# real aweb connection. Its invocation log also proves that initialization
+# happens after repo setup.
+aw_cli_bin="$tmp_root/aw-cli-bin"
+aw_cli_log="$tmp_root/aw-cli.log"
+mkdir -p "$aw_cli_bin"
+cat > "$aw_cli_bin/aw" <<'SH'
+#!/usr/bin/env bash
+if [ "$1" = "init" ]; then
+  printf '%s\n' "$PWD" >> "$AW_CLI_LOG"
+  exit 0
+fi
+exit 1
+SH
+chmod +x "$aw_cli_bin/aw"
+export PATH="$aw_cli_bin:$PATH"
+export AW_CLI_LOG="$aw_cli_log"
+
 aw_init_target="$tmp_root/aw-init-target"
 aw_init_skills="$tmp_root/aw-init-skills"
 aw_init_learnings="$tmp_root/aw-init-learnings"
@@ -320,6 +352,8 @@ aw_init_learnings="$tmp_root/aw-init-learnings"
   --force
 
 assert_repo_install "$aw_init_target"
+assert_file "$aw_cli_log"
+assert_equal "$(sed -n '1p' "$aw_cli_log")" "$(cd "$aw_init_target" && pwd)" "aw init target"
 assert_file "$aw_init_skills/aw-init/SKILL.md"
 assert_file "$aw_init_skills/aw-version.txt"
 assert_file "$aw_init_skills/aw-init/scripts/upgrade-config.rb"
