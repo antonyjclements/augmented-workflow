@@ -151,4 +151,3 @@ workflow_trace:
   required_gates:
     - review
     - check_workflow_compliance
-
