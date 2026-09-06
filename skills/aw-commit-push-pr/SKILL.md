@@ -7,24 +7,19 @@ description: Commit, push, and open a PR with an adaptive, value-first descripti
 
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-commit-push-pr` (silent no-op otherwise).
 
-**Reaching GitHub:** the `gh` commands below are the fallback, not the default.
-Before the first GitHub step, establish the path and use it for every GitHub action
-in the run: **GitHub MCP tools (`mcp__github__*`) when available** — load schemas with
-`ToolSearch` if needed — otherwise `gh`. Prefer MCP because it honors the harness's
-permission and repo scoping, takes structured parameters, and returns JSON; `gh` uses
-whatever token is on the machine, which may be a different identity than this session
-is scoped to. See [references/github-access.md](references/github-access.md) for the
-command mapping. Git operations (`status`, `diff`, `commit`, `push`) are unaffected —
-they are plain git, not `gh`. If neither path reaches GitHub, do the local work,
-then say plainly that the PR was not created and why; never report a PR that does
-not exist.
+When tracking is enabled, that first action can itself create an uncommitted
+`docs/metrics/skills*.jsonl` file. Treat all changed or untracked
+`docs/metrics/**` files as workflow exhaust that this skill must carry to the
+remote branch before creating or updating a PR.
 
-**Asking the user:** When this skill says "ask the user", use the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_user` in Gemini, `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to presenting the question in chat only when no blocking tool exists in the harness or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question.
+**Reaching GitHub:** use GitHub MCP tools (`mcp__github__*`) for GitHub actions when available; otherwise use `gh`. Pick one path before the first GitHub step and keep it for the run. See [references/github-access.md](references/github-access.md). Git operations (`status`, `diff`, `commit`, `push`) are plain git. If neither GitHub path works, do local work, then say the PR was not created and why.
+
+**Asking the user:** use the platform's blocking question tool: `AskUserQuestion` in Claude Code, `request_user_input` in Codex, `ask_user` in Gemini/Pi. Fall back to chat only when no blocking tool exists or the call errors. Never silently skip the question.
 
 ## Mode
 
-- **Description-only** — user wants *just* a description ("write/draft a PR description", "describe this PR", or pasted a PR URL/number alone). Run Step 4 only; print the result. Apply only if the user asks. If a PR ref was pasted, pass it to Step 4 so Pre-A resolves the right range.
-- **Description update** — user wants to refresh/rewrite an existing PR's description with no commit/push intent. If no open PR, report and stop. Otherwise run Step 4 (PR mode using the existing PR's URL), then Step 5 to preview, confirm, and apply via `gh pr edit`.
+- **Description-only** — user wants only PR text ("write/draft/describe this PR", or pasted a PR URL/number alone). Run Step 4; print the result. Apply only if asked. Pass any pasted PR ref to Step 4.
+- **Description update** — user wants to refresh/rewrite an existing PR's description with no commit/push intent. If no open PR, report and stop. Otherwise run Step 4, then Step 5 to preview, confirm, and apply.
 - **Full workflow** — otherwise. Run Steps 1-6 in order.
 
 ## Context
@@ -124,6 +119,8 @@ EOF
 )"
 ```
 
+`docs/metrics/**` is the explicit exception: changed or untracked workflow exhaust there, including the `skills*.jsonl` files this skill can create when it starts, must always be staged into the PR. If separate from the feature/fix, commit it as `chore(metrics): ...`.
+
 Then push:
 
 ```bash
@@ -140,6 +137,8 @@ After a successful push and before composing or applying a new PR for non-trivia
 - Skip only for trivial docs-only or mechanical changes, and state the skip explicitly.
 - If push fails because of credentials, network, remote policy, or another external blocker, report the blocker and do not claim compliance passed.
 - Fix locally actionable compliance findings before PR creation.
+
+This flow can mutate metrics through tracking, gates, review, compliance, or PR-description steps. After the initial push, and after any local pre-PR workflow step, check `git status --short -- docs/metrics`. If files are modified or untracked, stage only `docs/metrics/**`, commit as workflow exhaust (for example `chore(metrics): update workflow exhaust`), and push again. Do not create/edit the PR with unpushed `docs/metrics/**` changes.
 
 ## Step 4: Compose the PR title and body
 

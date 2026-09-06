@@ -1,0 +1,6 @@
+{"ts":"2026-09-06T20:51:55.030Z","event":"review","detail":"code review","source":"aw-gate"}
+{"ts":"2026-09-06T20:59:45.292Z","event":"synthesize","detail":null,"source":"aw-gate"}
+{"ts":"2026-09-06T21:00:14.663Z","event":"review","detail":"code review","source":"aw-gate"}
+{"ts":"2026-09-06T21:00:26.303Z","event":"check_workflow_compliance","detail":"acceptance-first; derived-state and installer tests passed","source":"aw-gate"}
+{"ts":"2026-09-06T21:00:46.917Z","event":"review","detail":"code review","source":"aw-gate"}
+{"ts":"2026-09-06T21:00:46.995Z","event":"check_workflow_compliance","detail":"acceptance-first; derived-state and installer tests passed","source":"aw-gate"}

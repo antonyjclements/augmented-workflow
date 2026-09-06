@@ -43,7 +43,7 @@ From a clone of this repo, the same installer is available inside the skill:
 skills/aw-init/scripts/install.sh --repo /path/to/target/repo
 ```
 
-This repository self-hosts its own install for dogfooding: root `AGENTS.md`, `CLAUDE.md`, and the `docs/workflow/` files are committed install output. `skills/aw-init/artifacts/` remains the source of truth — `scripts/test-install.sh` fails if the installed copies drift from the artifacts. There is still no root `scripts/install.sh`; `aw-init` owns installer behavior.
+This repository self-hosts its own install for dogfooding: root `AGENTS.md`, `CLAUDE.md`, and the `docs/workflow/` files are committed install output. `skills/aw-init/artifacts/` remains the source of truth for install output and defaults, including `artifacts/config.yml` for fresh workflow configs; `scripts/test-install.sh` fails if derived files or a test-installed config drift. There is still no root `scripts/install.sh`; `aw-init` owns installer behavior.
 
 The installer:
 
@@ -866,6 +866,11 @@ skills/aw-init/scripts/install.sh --learnings-dir ~/.agents/learnings
 skills/aw-init/scripts/install.sh --remote --repo .             # fetch latest source from GitHub
 skills/aw-init/scripts/install.sh --source-url URL --repo .     # fetch source from a pinned archive or mirror
 ```
+
+When the standalone aw-cli (`aw`) is available, the installer also runs `aw init`
+in the target repo. If it is missing during an interactive install, it asks before
+installing `git+https://github.com/antonyjclements/aw-cli.git` with `pipx`;
+non-interactive installs leave it unchanged and print the command to run later.
 
 Environment overrides:
 

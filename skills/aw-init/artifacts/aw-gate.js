@@ -1151,11 +1151,27 @@ function cmdValidate() {
   process.exit(0);
 }
 
+function uncommittedMetricFiles() {
+  const result = git(['status', '--short', '--untracked-files=all', '--', 'docs/metrics']);
+  if (result.status !== 0) {
+    // `validate` and install smoke tests can invoke the helper outside a git
+    // checkout. There can be no staged or uncommitted files in that context,
+    // so this advisory stays silent rather than reporting a misleading warning.
+    return { files: [] };
+  }
+  return { files: result.stdout.split(/\r?\n/).filter(Boolean) };
+}
+
 function cmdCheck(args) {
   const { flags } = parseFlags(args);
   const against = flags.against === 'worktree' ? 'worktree' : 'head';
   const config = loadConfig();
   const gates = config.gates || {};
+  const metrics = uncommittedMetricFiles();
+  if (metrics.files.length > 0) {
+    process.stderr.write('aw-gate: warning: uncommitted docs/metrics files should be committed before opening a PR\n');
+    for (const file of metrics.files) process.stderr.write(`  - ${file}\n`);
+  }
   if (gates.enabled !== true) {
     process.stdout.write('aw-gate: gates disabled (gates.enabled is not true) — skipping\n');
     process.exit(0);
