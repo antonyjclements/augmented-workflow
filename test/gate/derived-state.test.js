@@ -67,6 +67,27 @@ function seedFeature(root) {
   );
 }
 
+// --- Metrics-exhaust advisory -------------------------------------------
+
+{
+  const root = makeRepo();
+  write(root, 'docs/metrics/skills-2026-09.jsonl', '{"skill":"aw-commit-push-pr"}\n');
+  const res = run(root);
+  assert.strictEqual(res.status, 0, `metrics warning must not fail check: ${res.stderr}`);
+  assert.ok(/warning: uncommitted docs\/metrics files/.test(res.stderr), res.stderr);
+  assert.ok(/docs\/metrics\/skills-2026-09\.jsonl/.test(res.stderr), res.stderr);
+  ok('uncommitted metric files produce a non-blocking check warning');
+}
+
+{
+  const root = makeRepo();
+  write(root, 'notes.txt', 'ordinary uncommitted work\n');
+  const res = run(root);
+  assert.strictEqual(res.status, 0, `ordinary uncommitted work must not fail check: ${res.stderr}`);
+  assert.ok(!/uncommitted docs\/metrics files/.test(res.stderr), res.stderr);
+  ok('ordinary uncommitted files do not produce a metrics warning');
+}
+
 // --- The violations the guard exists to catch ----------------------------
 
 {

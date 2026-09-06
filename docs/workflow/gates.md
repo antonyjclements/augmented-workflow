@@ -139,6 +139,10 @@ put in a hook or CI job.
 - `--against worktree`: compare to the working tree (staged + unstaged). Use in a
   **pre-commit** hook so edits not yet committed are considered.
 
+When `docs/metrics/**` has staged, modified, or untracked files, `check` also
+prints a non-blocking warning. Those files are workflow exhaust produced by
+tracking and telemetry; commit them before opening a PR.
+
 `check` also validates the **learning audit trail** whenever `gates.enabled` is
 true, independently of what is configured under `gates.checks`. Every
 `docs/learnings/*.md` must carry a non-empty `derived-from`, and its
