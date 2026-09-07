@@ -56,7 +56,8 @@ When using a template: preserve section order; omit sections only when explicitl
 4. Clarify blocking product gaps one question at a time. Preserve non-blocking uncertainty as open questions.
 5. Create or update the PRD in `docs/product/prds/YYYY-MM-DD-<slug>.md` with `status: draft`.
 6. Update `docs/product/prds/index.yml` without disrupting its existing schema.
-7. Recommend the next step.
+7. If `workflow.design.enabled` is true and `workflow.design.hooks.prd_review.skill` is non-empty, invoke that design hook with the PRD path before recommending the next step.
+8. Recommend the next step.
 
 ### Rules
 
@@ -81,6 +82,7 @@ Persist external product input as a historical source artifact.
 3. Convert to clean markdown without changing meaning.
 4. Create `docs/product/prds/YYYY-MM-DD-<slug>.md` with `status: imported`.
 5. Update `docs/product/prds/index.yml`, preserving its schema where practical.
+6. If `workflow.design.enabled` is true and `workflow.design.hooks.prd_review.skill` is non-empty, invoke that design hook with the PRD path before handing off to brainstorming or spec creation.
 
 ### Rules
 

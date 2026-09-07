@@ -108,6 +108,6 @@ If the user says yes, invoke the recommended skill directly. Pass any context fr
 
 - If `docs/workflow/field-guide.md` exists, mention it as a reference for the full skill-by-task matrix: "See `docs/workflow/field-guide.md` for the complete task-type guide."
 - If the user's configured `docs/workflow/config.yml` overrides a default skill, use the configured skill name in the recommendation, not the default.
-- If `workflow.design.enabled` is true and the user's current position matches a configured non-empty design hook, recommend that design hook skill as the next step before continuing the normal workflow.
+- If `workflow.design.enabled` is true and the user's current position matches a configured non-empty design hook, recommend that design hook skill as the next step before continuing the normal workflow: `prd_review` after PRD intake, `discovery` after brainstorming, `spec_review` after spec creation, `plan_review` after planning, `ticket_review` after ticket drafting or creation, `implementation_review` after implementation, or `pre_pr` before PR creation.
 - If the user is using a team size that suggests lighter workflow (solo or pair), skip ceremony: do not recommend `aw-request-human-review`, `aw-create-tickets`, or full compliance checks unless the task warrants them.
 - Do not recommend multiple parallel skills. Give one clear next step.

@@ -358,11 +358,15 @@ workflow:
     reference_paths:
       - docs/standards
     hooks:
+      prd_review:
+        skill: ""
       discovery:
         skill: ""
       spec_review:
         skill: ""
       plan_review:
+        skill: ""
+      ticket_review:
         skill: ""
       implementation_review:
         skill: ""
@@ -433,7 +437,7 @@ Set `workflow.steps.<step>.skill` to replace a bundled workflow step with a cust
 
 Set `workflow.auxiliary.<key>.skill` to replace helper skills that can be invoked by multiple workflow steps.
 
-Set `workflow.design.enabled: true` to add design-team checkpoints around the core workflow without replacing it. Hook skills live under `workflow.design.hooks`: `discovery` after PRD intake or brainstorming, `spec_review` after spec creation, `plan_review` after planning, `implementation_review` after UI-affecting implementation, and `pre_pr` before PR creation. Leave a hook skill blank to skip it.
+Set `workflow.design.enabled: true` to add design-team checkpoints around the core workflow without replacing it. Hook skills live under `workflow.design.hooks`: `prd_review` after PRD intake, `discovery` after brainstorming, `spec_review` after spec creation, `plan_review` after planning, `ticket_review` after tickets are drafted or created, `implementation_review` after implementation, and `pre_pr` before PR creation. Leave a hook skill blank to skip it.
 
 Design reference material is repo-local. Put enforceable design principles, accessibility rules, content style, and interaction conventions in `docs/standards/` and index them in `docs/standards/index.yml`; keep feature-specific UX requirements in `docs/features/<feature>/spec.md`, durable tradeoffs in `docs/decisions/`, and corrections in `docs/learnings/`. Design hook skills should read `workflow.design.reference_paths` before reviewing artifacts or diffs.
 

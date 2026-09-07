@@ -52,11 +52,15 @@ workflow:
     reference_paths:
       - docs/standards
     hooks:
+      prd_review:
+        skill: ""
       discovery:
         skill: ""
       spec_review:
         skill: ""
       plan_review:
+        skill: ""
+      ticket_review:
         skill: ""
       implementation_review:
         skill: ""

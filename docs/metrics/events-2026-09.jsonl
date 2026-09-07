@@ -4,3 +4,6 @@
 {"ts":"2026-09-06T21:00:26.303Z","event":"check_workflow_compliance","detail":"acceptance-first; derived-state and installer tests passed","source":"aw-gate"}
 {"ts":"2026-09-06T21:00:46.917Z","event":"review","detail":"code review","source":"aw-gate"}
 {"ts":"2026-09-06T21:00:46.995Z","event":"check_workflow_compliance","detail":"acceptance-first; derived-state and installer tests passed","source":"aw-gate"}
+{"ts":"2026-09-07T01:40:07.574Z","event":"review","detail":"code","source":"aw-gate"}
+{"ts":"2026-09-07T01:50:02.975Z","event":"review","detail":"code","source":"aw-gate"}
+{"ts":"2026-09-07T10:13:38.790Z","event":"review","detail":"document review","source":"aw-gate"}

@@ -25,11 +25,15 @@ workflow:
     reference_paths:
       - docs/standards
     hooks:
+      prd_review:
+        skill: ""
       discovery:
         skill: ""
       spec_review:
         skill: ""
       plan_review:
+        skill: ""
+      ticket_review:
         skill: ""
       implementation_review:
         skill: ""
@@ -515,10 +519,12 @@ Design reference material lives in repo-local docs, usually `docs/standards/`, a
 Hook keys:
 
 ```text
-discovery -> after PRD intake or during brainstorming, before durable UX intent is settled
+prd_review -> after a PRD is authored or imported, before brainstorming or spec creation
+discovery -> after brainstorming, using its artifact or final context
 spec_review -> after a spec is created or updated
 plan_review -> after a plan is created, before tickets or implementation
-implementation_review -> after UI-affecting implementation work
+ticket_review -> after tickets are drafted or created, before implementation
+implementation_review -> after implementation work
 pre_pr -> before PR creation for design acceptance evidence
 ```
 
