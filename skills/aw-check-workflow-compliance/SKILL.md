@@ -29,7 +29,7 @@ Read `docs/workflow/config.yml` first.
 - Read `workflow.implementation.test_policy`; blank or missing values default to `acceptance-first`.
 - Read `workflow.steps.*.skill` to understand configured replacement steps. Do not use removed legacy skill-selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` for routing if they appear in older repos; report the migration path instead.
 - Read `workflow.auxiliary.*.skill` to understand configured helper skill replacements such as Slack research.
-- Read `workflow.design`; when enabled, configured non-empty design hooks are expected process checkpoints at discovery, spec review, plan review, implementation review, and pre-PR.
+- Read `workflow.design`; when enabled, configured non-empty design hooks are expected process checkpoints at PRD review, discovery, spec review, plan review, ticket review, implementation review, and pre-PR.
 - Read the `e2e` block. When `e2e.enabled` is true, changes touching `e2e.trigger_paths` (empty means unscoped) are expected to carry e2e coverage or a stated exception. A configured `workflow.auxiliary.e2e_tests.skill` says who authors the tests, not whether coverage is expected — a repo that writes e2e tests by hand is still in scope.
 - Treat non-skill configuration fields as authoritative, including `git.commit.*`, `pull_request.template.*`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
 

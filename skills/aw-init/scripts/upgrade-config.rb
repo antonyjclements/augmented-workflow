@@ -52,9 +52,11 @@ DEFAULT_CONFIG = {
       "enabled" => false,
       "reference_paths" => ["docs/standards"],
       "hooks" => {
+        "prd_review" => { "skill" => "" },
         "discovery" => { "skill" => "" },
         "spec_review" => { "skill" => "" },
         "plan_review" => { "skill" => "" },
+        "ticket_review" => { "skill" => "" },
         "implementation_review" => { "skill" => "" },
         "pre_pr" => { "skill" => "" }
       }
@@ -439,7 +441,7 @@ design = ensure_hash(ensure_hash(config, "workflow"), "design")
 design["enabled"] = false unless design.key?("enabled")
 design["reference_paths"] = ["docs/standards"] unless design.key?("reference_paths")
 design_hooks = ensure_hash(design, "hooks")
-%w[discovery spec_review plan_review implementation_review pre_pr].each do |hook|
+%w[prd_review discovery spec_review plan_review ticket_review implementation_review pre_pr].each do |hook|
   hook_config = ensure_hash(design_hooks, hook)
   hook_config["skill"] = "" unless hook_config.key?("skill")
 end

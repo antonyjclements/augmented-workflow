@@ -39,7 +39,7 @@ Ask one question at a time. Prefer concise single-select choices; use multi-sele
    - brief alignment for simple low-risk work
    - standard requirements for normal feature/problem work
    - deep exploration for ambiguous, strategic, cross-cutting, or high-risk work
-6. Gather context from user, repo, imported PRDs under `docs/product/prds/`, docs, learnings, and named resources. If `workflow.design.enabled` is true and `workflow.design.hooks.discovery.skill` is non-empty, invoke that design hook with the PRD path, brainstorm context, or feature idea before durable UX intent is settled. Use web/current research when outside facts may have changed.
+6. Gather context from user, repo, imported PRDs under `docs/product/prds/`, docs, learnings, and named resources. Use web/current research when outside facts may have changed.
 7. Explore:
    - actors/users
    - problem and evidence
@@ -56,6 +56,7 @@ Ask one question at a time. Prefer concise single-select choices; use multi-sele
    - ideation doc: when the user wants to compare options or keep the concept exploratory without writing a PRD
    - no artifact: only for quick factual/single-step requests
 10. Write or update the chosen artifact.
+11. If `workflow.design.enabled` is true and `workflow.design.hooks.discovery.skill` is non-empty, invoke that design hook with the brainstorm output artifact or final brainstorm context before handing off to the next workflow step.
 
 ## Living Spec Output
 

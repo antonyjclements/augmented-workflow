@@ -18,3 +18,12 @@ features:
       - telemetry
       - evaluation
       - governance
+  - key: theory-building-site
+    title: Theory-Building Site Narrative
+    spec: docs/features/theory-building-site/spec.md
+    status: active
+    tags:
+      - website
+      - positioning
+      - narrative
+      - theory-building

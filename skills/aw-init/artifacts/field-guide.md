@@ -126,7 +126,7 @@ The full chain pays off here because context loss and cross-session continuity b
 - Use `aw-create-tickets` to split plans into Linear/GitHub issues so agents can pick up work independently
 - Use `aw-request-human-review` for specs and plans before implementation starts
 - Use `aw-check-workflow-compliance` before PRs on any high-risk change
-- Configure `workflow.design` hooks when a design team should participate in discovery, spec review, plan review, implementation review, or pre-PR acceptance
+- Configure `workflow.design` hooks when a design team should participate after PRD intake, brainstorming, spec review, plan review, ticket creation, implementation review, or pre-PR acceptance
 - Configure `workflow.steps.monitor_pipeline.skill` for CI monitoring
 
 ---

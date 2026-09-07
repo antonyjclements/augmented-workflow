@@ -124,7 +124,7 @@ running the workflow-specific checks below:
 - ensure docs/config/tests match behavior
 - update `README.md` when user-facing setup, commands, configuration, architecture, or workflow behavior changed
 - check the diff against applicable standards from `docs/standards/index.yml`
-- if the work affects UI or UX and `workflow.design.enabled` is true with `workflow.design.hooks.implementation_review.skill` non-empty, invoke that design hook with the changed artifact, plan/spec path, or current diff
+- if `workflow.design.enabled` is true with `workflow.design.hooks.implementation_review.skill` non-empty, invoke that design hook after implementation with the changed artifact, plan/spec path, or current diff
 - run `aw-review` for non-trivial or risky changes when time/context allows; address safe findings and surface judgment calls
 - record ship-readiness evidence needed by `aw-check-workflow-compliance`: effective test policy, tests/checks run, acceptance coverage, e2e coverage or exception when `e2e` is enabled and in scope, README status, review gates run/skipped, and justified exceptions
 

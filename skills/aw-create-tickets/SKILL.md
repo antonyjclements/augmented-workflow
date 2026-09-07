@@ -40,9 +40,10 @@ Removed legacy field: `ticket_creation.skill`. If it appears in an older repo, t
    - relevant standards and decisions
    - implementation entrypoint: `aw-work <ticket ID or URL>`
    - note that a future agent may start from this ticket alone after checking out the repo
-5. If `workflow.steps.create_tickets.skill` is blank or missing, stop after reporting the proposed ticket split and explain that no external tickets were created because no custom ticketing step is configured.
+5. If `workflow.steps.create_tickets.skill` is blank or missing, invoke `workflow.design.hooks.ticket_review.skill` when `workflow.design.enabled` is true and that hook is non-empty, passing the proposed ticket split. Then report the split and explain that no external tickets were created because no custom ticketing step is configured.
 6. Otherwise invoke the configured `workflow.steps.create_tickets.skill`.
-7. Report created ticket IDs/URLs and the recommended first ticket ID/URL to pass to `aw-work`.
+7. If `workflow.design.enabled` is true and `workflow.design.hooks.ticket_review.skill` is non-empty, invoke that design hook with the created ticket IDs/URLs and source plan before handing them to implementation.
+8. Report created ticket IDs/URLs and the recommended first ticket ID/URL to pass to `aw-work`.
 
 ## Ticket Shape
 
