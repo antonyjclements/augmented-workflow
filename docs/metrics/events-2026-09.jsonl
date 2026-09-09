@@ -15,3 +15,4 @@
 {"ts":"2026-09-09T01:28:22.047Z","event":"review","detail":"experience-discovery-replay","source":"aw-gate"}
 {"ts":"2026-09-09T01:32:19.299Z","event":"review","detail":"pre-pr-experience-discovery","source":"aw-gate"}
 {"ts":"2026-09-09T01:32:30.466Z","event":"review","detail":"committed-experience-discovery","source":"aw-gate"}
+{"ts":"2026-09-09T01:33:05.374Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}

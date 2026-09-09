@@ -46,8 +46,20 @@ is claimed.
 
 ## Remaining Boundaries
 
-No browser or gate-unit tests were run: neither product UI nor deterministic
-gate code changed. Design hooks are disabled in this repo. No human review is
-configured. PR compliance and publishing were not run because no push or PR was
-requested. The implementation preserves the agreed rationale in living intent;
+No browser tests were run: no product UI changed. Gate-unit tests were initially
+omitted because no gate code changed; the pre-push hook subsequently ran them
+successfully. Design hooks are disabled in this repo. No human review is
+configured. The implementation preserves the agreed rationale in living intent;
 no separate capture artifact was needed for an additional implementation decision.
+
+## Shipping Compliance
+
+Workflow compliance: pass after the feature branch was pushed. Local HEAD and
+`origin/feat/experience-discovery` both resolved to `1cafd38` at review time.
+Effective policy is acceptance-first; EXD-001–EXD-005 map to S1–S9 and the linked
+replay observations. README and installer-owned documentation are updated.
+Review receipt and all three configured freshness gates passed. No configured
+step override or enabled design hook was skipped. The pre-push hook passed trace
+(with documented optional code-anchor warnings), pin check, and all gate test
+suites. CI monitoring is disabled by configuration. Residual risk remains model
+variation, third-party hooks, and real-human experiential judgment.
