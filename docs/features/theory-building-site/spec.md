@@ -2,7 +2,7 @@
 title: Theory-Building Site Narrative
 status: active
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-08
 tags:
   - website
   - positioning
@@ -46,6 +46,12 @@ integrity checks, and accountable agent participation. The pages use
 Augmented Workflow branding, reciprocal navigation, original-language Naur
 paraphrases with source links, and no fixed skill counts, legacy commands, or
 runtime-specific installation claims.
+
+The overview connects shared understanding to what people should understand,
+accomplish, and feel. The technical page explains experience discovery within
+the renewal loop: interpret intent, suggest a disposable prototype, wait for
+agreement, gather a human reaction, and preserve useful learning. It distinguishes
+functional correctness from experiential fit and treats prototypes as disposable.
 
 The pages use the approved AW monogram in navigation, the full logo lockup on
 the overview page, and the supplied dark-gradient icon as the favicon. Their
@@ -137,6 +143,21 @@ automation.
 
 The public pages use the approved AW assets and follow the restrained
 navy/violet, system-sans visual system defined in `docs/brand/style-guide.md`.
+
+### TBS-010 — Experience intent is made inspectable
+
+The overview explains that people clarify what users should understand,
+accomplish, and feel, and inspect the agent's interpretation before implementation.
+The technical page describes the experience-discovery loop from
+`docs/features/experience-discovery/spec.md`, including waiting for agreement
+before a suggested prototype and honoring an explicit prototype request without
+asking for permission again. Routine clear changes do not require this loop.
+
+### TBS-011 — Experiential judgment and disposable evidence remain distinct
+
+The technical page states that functional correctness cannot establish
+experiential fit. Human feedback informs living intent; unresolved fit remains
+visible. Useful learning can survive after a disposable prototype is discarded.
 
 ## Boundaries and Non-Goals
 
