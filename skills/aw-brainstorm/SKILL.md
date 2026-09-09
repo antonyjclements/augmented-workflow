@@ -8,7 +8,7 @@ argument-hint: "[feature idea or problem to explore]"
 
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-brainstorm` (silent no-op otherwise).
 
-Current year: 2026. Brainstorming defines what to build; `aw-plan` defines how. Output is not code. Use repo-relative paths only.
+Current year: 2026. Brainstorming defines what to build; `aw-plan` defines how. Output is not production code; an explicitly authorized disposable prototype may help resolve experiential uncertainty. Use repo-relative paths only.
 
 PRDs and raw ideas usually contain implicit ambiguity and open questions. Treat PRD and idea intake as a discovery step that resolves enough product behavior to write durable intent. If the PRD is pasted or linked, use `aw-prd` first so the historical source artifact is preserved, then continue from the imported PRD path. Once product behavior is explicit enough, create or update the living feature spec in the same run. If the user wants a PRD as the output, route to `aw-prd`.
 
@@ -49,14 +49,45 @@ Ask one question at a time. Prefer concise single-select choices; use multi-sele
    - success criteria
    - constraints/dependencies
    - risks and unresolved questions
-8. Push on weak assumptions with targeted prompts. Do not ask checklist questions just to fill a template.
+8. Push on weak assumptions with targeted prompts. Use Experience Discovery below when consequential experiential uncertainty remains. Do not ask checklist questions just to fill a template.
 9. Choose the output artifact:
    - living spec: default for software/product work that affects durable feature intent
    - PRD: route to `aw-prd` when the user asks to create or update a PRD
    - ideation doc: when the user wants to compare options or keep the concept exploratory without writing a PRD
    - no artifact: only for quick factual/single-step requests
 10. Write or update the chosen artifact.
-11. If `workflow.design.enabled` is true and `workflow.design.hooks.discovery.skill` is non-empty, invoke that design hook with the brainstorm output artifact or final brainstorm context before handing off to the next workflow step.
+11. If `workflow.design.enabled` is true and `workflow.design.hooks.discovery.skill` is non-empty, invoke that design hook once with the brainstorm output artifact or final brainstorm context before handing off to the next workflow step. Include any experience interpretation, prototype agreement and scope, prototype reference, human feedback, and unresolved questions. Hook configuration does not authorize a prototype. Reuse existing agreement and feedback; reconcile new findings with intent before handoff without recursively rerunning hooks. Report unsupported hook behavior rather than bypassing the agreement boundary.
+
+## Experience Discovery
+
+Use this loop when the user requests experience exploration or when emotional
+goals, visual references, or materially different plausible experiences leave
+consequential uncertainty. A routine UI change with clear intent needs no probe.
+The loop works even when design hooks are disabled or blank.
+
+1. Make the interpretation inspectable: what should people understand, accomplish,
+   and feel? Explain which observed qualities of references support those outcomes.
+   State inaccessible references or other evidence gaps instead of inventing them.
+2. Suggest a small disposable prototype and explain what it would clarify. Wait
+   for agreement before creating it; silence is not agreement. An explicit request
+   to create a prototype already authorizes its stated scope. Reuse agreement
+   from the conversation rather than asking again. A broad build request alone
+   does not authorize a separate exploratory prototype.
+3. After agreement, use an available medium that can test the uncertainty. If it
+   cannot, explain the limitation and agree on an alternative. Do not present an
+   inadequate substitute as validation or expand the probe into production work.
+4. Present the probe for a human reaction. Agreement to prototype is not approval
+   of the resulting experience. Functional checks or silence cannot settle
+   experiential fit; a mismatch stays open until addressed or explicitly deferred.
+5. Carry useful discoveries into existing living-spec sections. Artifacts express
+   partial evidence of human Theory; reading them does not give the agent Theory.
+   Keep unresolved assumptions visible, including when exploration is declined.
+
+If the user declines, create no prototype and do not repeat the same suggestion
+without new information. Continue authorized work with the uncertainty explicit.
+Prototypes need not become permanent artifacts: preserve useful learning without
+requiring a lasting prototype link. Do not automatically delete existing user
+files. No extra document or skill invocation is required for every change.
 
 ## Living Spec Output
 

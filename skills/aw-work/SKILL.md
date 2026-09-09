@@ -58,6 +58,14 @@ If bare prompt:
    `node .scripts/aw-gate.js workflow-record tier --tier <trivial|small_fix|feature|high_risk> --reason "<short reason>"`.
    The helper owns whether workflow trace is enabled and will no-op when disabled.
 
+When intake or later work exposes consequential uncertainty about the intended
+human experience, use the Experience Discovery loop in `aw-brainstorm`: explain
+what a small prototype would clarify, suggest it, and wait for agreement before
+creating it. A general build request is not permission for a separate exploratory
+prototype. Reuse explicit prototype requests, prior agreement, and human feedback
+from the conversation. Keep clear requests lightweight; do not restart discovery
+for an experience already settled within the current scope.
+
 ## Phase 1: Understand and Set Up
 
 For plans, treat the plan as a decision artifact, not a script. Extract implementation units, requirements, files, test scenarios, verification, execution notes, standards references, implementation-time unknowns, scope boundaries, references, and deferred work. Ask only for ambiguity that would change the implementation.

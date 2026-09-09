@@ -532,6 +532,20 @@ When `workflow.design.enabled` is false, agents skip design hooks. When it is tr
 
 ## Artifact Handoff Contract
 
+Experience discovery is part of `aw-brainstorm` even when design hooks are off.
+When an intended experience is uncertain, the agent explains its interpretation
+and suggests a small disposable prototype, waiting for agreement before creating
+it. An explicit prototype request already authorizes its stated scope. Human
+reaction, rather than functional checks alone, informs experiential fit.
+
+The discovery hook stays at the end of brainstorming and receives any experience
+interpretation, prototype agreement and scope, prototype reference, human
+feedback, and unresolved questions alongside the artifact or final context.
+Reuse that context instead of repeating approval questions or exploration.
+Hook configuration does not authorize prototype creation. Invoke the hook once
+at this checkpoint, reconcile new findings before handoff, and do not recursively
+rerun hooks. Report unsupported contract elements instead of bypassing agreement.
+
 Each workflow step returns the artifact path or ID that becomes input to the next step. Custom replacement skills must preserve this contract.
 
 - `aw-prd` outputs `docs/product/prds/<prd>.md` -> pass to `aw-brainstorm` when ambiguity remains, or `aw-create-spec` when ready for a direct spec draft.

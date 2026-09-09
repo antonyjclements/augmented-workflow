@@ -104,6 +104,10 @@ Everything else is optional. Add specs when features get complex enough that you
 Add to the above:
 
 - `aw-brainstorm` before anything with product ambiguity — a 10-minute scope alignment now saves a week of rework later
+- When the intended human experience is uncertain, `aw-brainstorm` interprets the
+  goal and references, suggests a disposable prototype, and waits for agreement.
+  Explicit prototype requests already authorize their scope. Human feedback
+  informs the living spec; routine UI changes need no extra discovery loop.
 - `aw-create-spec` for features that touch multiple people's code
 - `aw-capture learning` after postmortems or non-obvious bugs
 - `aw-synthesize-memory` monthly, to distill session logs into team learnings
