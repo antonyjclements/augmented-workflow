@@ -46,3 +46,16 @@ Feature: Theory-building site narrative
   Scenario: The site follows the current brand system
     Given either public page is open
     Then its navigation, identity assets, palette, and typography follow the approved style guide
+
+@spec:TBS-010
+  Scenario: The pages explain experience discovery
+    Given the overview and technical pages are open
+    Then they connect intent to what people should understand, accomplish, and feel
+    And the technical page explains interpretation, suggestion, agreement, feedback, and learning
+    And explicit prototype requests need no repeated approval while routine changes stay lightweight
+
+@spec:TBS-011
+  Scenario: Human feedback determines experiential fit
+    Given the technical page is open
+    Then it distinguishes functional correctness from experiential fit
+    And it explains that useful learning survives disposable prototypes
