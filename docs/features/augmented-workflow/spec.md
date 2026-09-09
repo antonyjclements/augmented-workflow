@@ -111,6 +111,12 @@ The workflow routes:
 
 - A pasted, linked, or file-based PRD is persisted with `aw-prd` (import mode), then passed to `aw-brainstorm` when ambiguity remains. `aw-brainstorm` clarifies the product behavior and creates or updates the living spec in the same run.
 - Raw ideas can start with `aw-brainstorm`; the skill creates or updates a living spec when durable intent is ready.
+- For consequential uncertainty about the intended human experience, brainstorm
+  interprets goals and references, suggests a disposable prototype, and waits for
+  agreement before creating it. Explicit requests already authorize their scope.
+  Human feedback informs intent; functional checks alone do not validate the
+  experience. Work intake reuses this loop. See
+  `docs/features/experience-discovery/spec.md` for its contract.
 - When the user wants a PRD as the output, `aw-prd` (create mode) authors one from an idea, brainstorm, notes, or clarified product direction. The skill uses `docs/product/prds/template.md` when a repo defines it, otherwise it falls back to its bundled PRD template.
 - PRDs use lifecycle statuses: `imported`, `draft`, `ready-for-spec`, `promoted`, `superseded`, and `archived`. Spec creation marks source PRDs `promoted` and records `promoted_to` without rewriting the PRD body.
 - Artifacts marked `status: archived` may be removed from the working tree by `aw-refresh cleanup`; git history is the archive.

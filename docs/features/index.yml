@@ -1,4 +1,12 @@
 features:
+  - key: experience-discovery
+    title: Experience Discovery
+    spec: docs/features/experience-discovery/spec.md
+    status: active
+    tags:
+      - discovery
+      - human-experience
+      - prototyping
   - key: augmented-workflow
     title: Spec-Driven Augmented Workflow
     spec: docs/features/augmented-workflow/spec.md

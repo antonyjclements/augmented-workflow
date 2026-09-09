@@ -10,6 +10,18 @@ Changes before 0.6.0 predate this changelog; see git history and `docs/decisions
 for that record. `scripts/test-install.sh` fails if the current `aw-version.txt`
 version has no entry here.
 
+## [Unreleased]
+
+### Added
+
+- Experience discovery in `aw-brainstorm`, with an intake pointer from `aw-work`:
+  interpret human outcomes and references, suggest a disposable prototype, wait
+  for agreement, and use human reaction to refine living intent. Explicit
+  prototype requests already authorize their scope; routine UI changes stay
+  lightweight. An authorized prototype is a bounded exception to brainstorming's
+  prohibition on production code. Existing discovery-hook timing is preserved,
+  with agreement and feedback carried through the handoff.
+
 ## [0.14.0] - 2026-08-12
 
 ### Added

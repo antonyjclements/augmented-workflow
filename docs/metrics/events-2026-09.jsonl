@@ -10,3 +10,9 @@
 {"ts":"2026-09-07T10:21:01.470Z","event":"review","detail":"code review","source":"aw-gate"}
 {"ts":"2026-09-07T10:21:28.633Z","event":"check_workflow_compliance","detail":"acceptance-first; installer and migration tests passed","source":"aw-gate"}
 {"ts":"2026-09-07T10:25:23.741Z","event":"review","detail":"document review","source":"aw-gate"}
+{"ts":"2026-09-09T01:10:24.369Z","event":"review","detail":"document-plan","source":"aw-gate"}
+{"ts":"2026-09-09T01:14:40.249Z","event":"review","detail":"code-review-experience-discovery","source":"aw-gate"}
+{"ts":"2026-09-09T01:28:22.047Z","event":"review","detail":"experience-discovery-replay","source":"aw-gate"}
+{"ts":"2026-09-09T01:32:19.299Z","event":"review","detail":"pre-pr-experience-discovery","source":"aw-gate"}
+{"ts":"2026-09-09T01:32:30.466Z","event":"review","detail":"committed-experience-discovery","source":"aw-gate"}
+{"ts":"2026-09-09T01:33:05.374Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}

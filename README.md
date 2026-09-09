@@ -260,6 +260,17 @@ For existing behavior or already-clear requirements, `aw-create-spec` can still 
 Analyze the checkout flow and create a spec for how it works today.
 ```
 
+When the intended human experience is uncertain, brainstorming can include a
+small disposable prototype. For example: “These metrics should make it easy to
+see how AW works and feel rewarding to explore.” The agent explains its
+interpretation of the goal and any visual references, suggests what a prototype
+would clarify, and waits for agreement before creating it. An explicit request
+to create a prototype already authorizes that scope. You then react to the
+experience, and useful learning goes into the living spec. If you decline, the
+agent continues authorized work with the uncertainty visible. Passing functional
+checks alone does not establish experiential fit. This loop needs no design hook
+or new configuration; configured discovery hooks retain their existing timing.
+
 Specs are stored by feature:
 
 ```text
