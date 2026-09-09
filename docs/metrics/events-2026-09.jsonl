@@ -16,3 +16,5 @@
 {"ts":"2026-09-09T01:32:19.299Z","event":"review","detail":"pre-pr-experience-discovery","source":"aw-gate"}
 {"ts":"2026-09-09T01:32:30.466Z","event":"review","detail":"committed-experience-discovery","source":"aw-gate"}
 {"ts":"2026-09-09T01:33:05.374Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}
+{"ts":"2026-09-09T01:45:00.610Z","event":"review","detail":"site-experience-copy","source":"aw-gate"}
+{"ts":"2026-09-09T01:49:26.662Z","event":"review","detail":"site-discovery-pre-pr","source":"aw-gate"}
