@@ -500,7 +500,9 @@ resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
 
-`e2e_tests` is a config-only key with no bundled skill: e2e frameworks are stack-specific, so the repo supplies the skill. `research_slack`, `log_session`, `monitor_pipeline`, and `clean_artifacts` are no longer bundled keys. For Slack research, agents use available tools directly; set `workflow.auxiliary.research_slack.skill` for enterprise routing. Session logging is now `aw-capture session`. Post-PR CI monitoring requires a custom skill via `workflow.steps.monitor_pipeline.skill`. Archived artifact cleanup is now `aw-refresh cleanup`.
+`aw-research` is a shared research helper for repository, web, and organizational evidence, usable directly or during brainstorming and planning. It loads Slack-specific instructions only when Slack is selected. For example: `/aw-research Why was the import rollout paused? Search Slack in the release channel for the last month.`
+
+`e2e_tests` and `research_slack` are config-only keys with no separate bundled skills. E2E frameworks are stack-specific, so the repo supplies the skill. `aw-research` uses `workflow.auxiliary.research_slack.skill` for enterprise Slack routing. Session logging is now `aw-capture session`. Post-PR CI monitoring requires a custom skill via `workflow.steps.monitor_pipeline.skill`. Archived artifact cleanup is now `aw-refresh cleanup`.
 
 Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` are now `prd` and `review`; old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, and `log_session` are now `refresh` and `capture`. Migrate old values to the matching current keys.
 
@@ -520,7 +522,7 @@ Blank or missing policy values default to `acceptance-first`.
 
 Set `workflow.steps.create_tickets.skill` to a Linear, Jira, or custom ticketing step when external tickets should be created. Leave it blank to use the bundled `aw-create-tickets` drafting step, which reports the proposed ticket split without creating external tickets.
 
-Set `workflow.auxiliary.research_slack.skill` when Slack access should route through an enterprise-specific Slack skill. When not set, agents use whatever Slack tools are available in the environment (MCP servers, etc.) directly.
+Set `workflow.auxiliary.research_slack.skill` when Slack access should route through an enterprise-specific Slack skill. When not set, `aw-research` uses available Slack tools (including MCP) directly. The override is checked only on the Slack path; no new research config key is needed. Research returns cited findings and limitations without posting messages or automatically changing specs. See [the Slack reference](skills/aw-research/references/slack.md) for the handoff contract.
 
 Set `pull_request.template.title` and `pull_request.template.body` when PR title/body text should follow organization templates. Each value should point to a markdown file by GitHub URL, raw GitHub URL, `file://` URL, absolute path, or repo-relative path. Leave either blank to use the default generated title or body for that part.
 

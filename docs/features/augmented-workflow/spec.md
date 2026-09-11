@@ -223,6 +223,10 @@ The workflow routes:
 
 ## Acceptance Criteria
 
+- `aw-research` supports focused repository, web, and organizational research independently or during brainstorming/planning. It returns cited findings, distinguishes evidence from inference, and reports unresolved questions and access limitations.
+- Slack-specific instructions live in `skills/aw-research/references/slack.md` and are loaded only when Slack is selected. Repository-only and web-only research do not load Slack instructions or discover Slack tools.
+- Slack research honors `workflow.auxiliary.research_slack.skill` when configured; blank or missing uses available Slack tools directly. A self-reference to `aw-research` does not recurse, and an unavailable enterprise override is reported rather than bypassed. Research does not post to Slack or silently overwrite accepted product intent.
+
 - New installs create `.augmented-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/standards/coding-approach.md`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, `docs/workflow/README.md`, `docs/workflow/field-guide.md`, `docs/workflow/gates.md`, `docs/workflow/org-knowledge.md`, `docs/metrics/README.md`, `docs/solutions/README.md`, and the optional Claude Code Stop hook (`.claude/hooks/log-session.sh` plus a `.claude/settings.json` entry). No index is created for `docs/brainstorms/`, `docs/sessions/`, or `docs/solutions/`. The installed workflow README and skills reference `gates.md`, `org-knowledge.md`, and `docs/metrics/README.md`, so those are installed too rather than left as dangling references.
 - The installed `AGENTS.md` version stamp, installer version marker, and config migration version marker are sourced from root `aw-version.txt` when a full source tree is available.
 - `CHANGELOG.md` exists and contains an entry for the version in `aw-version.txt` (Keep a Changelog format); `scripts/test-install.sh` fails when the current version has no changelog entry.
