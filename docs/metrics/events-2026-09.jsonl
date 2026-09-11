@@ -21,3 +21,4 @@
 {"ts":"2026-09-09T01:50:02.242Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}
 {"ts":"2026-09-11T19:17:59.915Z","event":"review","detail":"document and spec review: aw-research","source":"aw-gate"}
 {"ts":"2026-09-11T19:21:58.297Z","event":"review","detail":"aw-research document and spec review","source":"aw-gate"}
+{"ts":"2026-09-11T19:22:32.422Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}

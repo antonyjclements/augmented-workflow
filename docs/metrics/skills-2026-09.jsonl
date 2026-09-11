@@ -36,3 +36,4 @@
 {"ts":"2026-09-11T19:17:40.151Z","session_id":"df3ea584-ddd5-460c-a3f3-594584661eaf","skill":"aw-review","source":"skill","workflow_step":"review"}
 {"ts":"2026-09-11T19:20:36.303Z","session_id":"df3ea584-ddd5-460c-a3f3-594584661eaf","skill":"aw-commit-push-pr","source":"skill","workflow_step":"commit_push_pr"}
 {"ts":"2026-09-11T19:21:15.147Z","session_id":"df3ea584-ddd5-460c-a3f3-594584661eaf","skill":"aw-review","source":"skill","workflow_step":"review"}
+{"ts":"2026-09-11T19:22:32.160Z","session_id":"df3ea584-ddd5-460c-a3f3-594584661eaf","skill":"aw-check-workflow-compliance","source":"skill","workflow_step":"check_workflow_compliance"}
