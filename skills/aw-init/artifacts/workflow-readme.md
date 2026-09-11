@@ -510,6 +510,21 @@ resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
 
+`aw-research` is a shared helper for focused repository, web, and organizational
+research. Use it directly or from brainstorming/planning with the question and
+relevant artifact context. It selects relevant sources and loads its Slack
+reference only when Slack is selected; other research does not load Slack
+instructions or discover Slack tools.
+
+On the Slack path, `workflow.auxiliary.research_slack.skill` selects an enterprise
+replacement. Blank or missing uses available Slack tools, including MCP. An
+unavailable override is reported rather than bypassed; setting it to `aw-research`
+continues with the bundled Slack reference without recursion. Results include
+cited evidence, conflicts, and access limitations. Research is read-only at the
+source and returns findings to the calling workflow without silently changing
+accepted specs or decisions. There is no separate `research` config key or
+mandatory research gate.
+
 ## Design Hooks
 
 Design hooks are additive checkpoints for teams with design skills. They do not replace the core workflow steps; use `workflow.steps.<step>.skill` when a design-owned skill should replace an entire lifecycle step.

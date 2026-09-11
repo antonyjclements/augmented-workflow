@@ -46,6 +46,8 @@ A ready plan has:
 
 ## Phase 1: Research
 
+Use `aw-research` when a planning question needs focused evidence gathering or organizational context. Pass the question and relevant spec context; source-specific instructions load only for selected sources. Incorporate its findings into the research below.
+
 Always inspect local code, tests, docs, conventions, `docs/features/index.yml` for living product intent, `docs/decisions/index.yml` for prior decisions, `docs/solutions/` for prior learnings, and `docs/standards/index.yml` when present. Treat the standards index as the standards registry: infer its schema, select relevant referenced markdown standards by path/tag/glob/domain, and read only applicable standards. Discover user-named tools/resources before substituting alternatives. Decide on external research when APIs, libraries, standards, laws, pricing, or current behavior may have changed; use primary sources. Capture:
 
 - relevant files and patterns

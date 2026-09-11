@@ -39,7 +39,7 @@ Ask one question at a time. Prefer concise single-select choices; use multi-sele
    - brief alignment for simple low-risk work
    - standard requirements for normal feature/problem work
    - deep exploration for ambiguous, strategic, cross-cutting, or high-risk work
-6. Gather context from user, repo, imported PRDs under `docs/product/prds/`, docs, learnings, and named resources. Use web/current research when outside facts may have changed.
+6. Gather context from user, repo, imported PRDs under `docs/product/prds/`, docs, learnings, and named resources. Use web/current research when outside facts may have changed. Use `aw-research` for focused evidence gathering or organizational context; it loads source-specific instructions only for selected sources.
 7. Explore:
    - actors/users
    - problem and evidence
