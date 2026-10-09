@@ -25,6 +25,10 @@ the user subsequently authorized committing and pushing directly to `main`.
 - `node .scripts/aw-gate.js trace --base origin/main`: exited 0 with existing
   EXD/TBS code-anchor warnings. New untracked spec/tests are also checked manually;
   no claim that this command alone validates untracked acceptance coverage.
+- Shipping trace subsequently exposed missing discoverable anchors after the new
+  spec was committed. `progress-tracking.feature` now links installer scenarios
+  and explicitly manual lifecycle walkthroughs to PROG-001 through PROG-005.
+  These anchors claim coverage, not automated behavioral replay.
 - Spec and actual local record YAML frontmatter parse as mappings; the record
   matches the exact ignore rule and remains outside the Git index.
 
