@@ -1,0 +1,5 @@
+{"ts":"2026-10-09T19:08:33.092Z","event":"review","detail":"Sequential code and document review; installer regression suite and guard negative tests passed.","source":"aw-gate"}
+{"ts":"2026-10-09T19:08:33.222Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}
+{"ts":"2026-10-09T20:57:44.090Z","event":"synthesize","detail":null,"source":"aw-gate"}
+{"ts":"2026-10-09T20:59:09.910Z","event":"review","detail":"Full feature diff reviewed previously; shipping metadata and trace scenario changes reviewed now.","source":"aw-gate"}
+{"ts":"2026-10-09T20:59:09.972Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}
