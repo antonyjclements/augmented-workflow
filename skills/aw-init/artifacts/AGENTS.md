@@ -40,6 +40,22 @@ For auth, payments, security, migrations, CI/CD, architecture, multi-module work
 
 Keep durable artifacts when knowledge is worth rediscovering later. Keep intent alive in specs, let plans expire, and record decisions immutably. At natural pauses, offer `aw-capture` for resolved trade-offs, corrections, reusable learnings, and meaningful session wrap-up; write immediately only when the target is explicit and repo-local.
 
+## Local Execution Continuity
+
+For multi-unit, cross-session, blocked/paused or handoff work, use one ignored
+`.aw/workstreams/<workstream-id>/progress.md` per workstream. `aw-work` owns its
+versioned template and lifecycle. Resolve explicit IDs/paths or matching sources;
+ask among multiple matches, never select by recency. Reconcile repository,
+checkout, branch, HEAD, sources and live changes before restoring stable unit IDs
+and next action. One coordinator preserves human notes and checkpoints outcomes.
+
+Progress is historical context, not gate proof. Keep short tasks lightweight.
+Prepare closure with actual checks, skips, risks and remaining scope; ask for
+human acceptance and separate keep/export/remove disposition. Silence or completion
+alone retains the record. Removal needs explicit approval for the exact local-only
+file and its loss. New worktrees do not inherit records; transfer only by explicit
+handoff. Never automatically ingest active progress into memory or synthesis.
+
 ## Workflow Step Routing
 
 - Read `docs/workflow/config.yml` before invoking a configurable step. A configured `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` replaces the bundled default; blank means use the default. See `docs/workflow/README.md` for key maps, contracts, and legacy migration.

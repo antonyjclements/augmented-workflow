@@ -14,6 +14,23 @@ Not sure which skill fits your situation? Use `aw-help` for an interactive recom
 
 ## By task type
 
+### Resume work across sessions
+
+Use `aw-work <workstream-id>` or pass the exact
+`.aw/workstreams/<workstream-id>/progress.md` path. For long-running/multi-unit,
+blocked/paused or handoff work, `aw-work` keeps a short local snapshot, stable unit
+IDs, next action, decisions and evidence. Ordinary short tasks need no record.
+If several records match, select one explicitly. Reconcile live repository,
+checkout, branch, HEAD and source changes before trusting the recorded next action.
+
+The installer ignores only `/.aw/workstreams/` for these records, with or without
+gates. They have no Git backup and do not travel with clones or worktrees; use an
+approved handoff naming source and destination. One coordinator writes each file.
+Old results do not satisfy current verification. At closure, choose acceptance
+and separately keep/export/remove; silence or completion alone keeps the file.
+Use `aw-capture` for durable knowledge and explicit `aw-refresh cleanup` for
+approved removal of an exact progress file.
+
 ### Bug fix
 
 ```

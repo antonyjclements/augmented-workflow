@@ -197,6 +197,42 @@ becoming a growth or merge-conflict problem:
 
 Schema and aggregation notes live in `docs/metrics/README.md`.
 
+### Local workstream progress
+
+For work spanning sessions, several units, blockers, pauses or handoffs, `aw-work`
+creates/resumes `.aw/workstreams/<workstream-id>/progress.md`. Ordinary short tasks
+stay lightweight. The version 1 Markdown template and full lifecycle live in the
+`aw-work` skill's `references/progress-template.md` and `references/progress-tracking.md`.
+This is an instruction-led record, available without gate scripts or new config.
+
+`aw-init` adds the exact root ignore rule `/.aw/workstreams/` on every repository
+install, independently of `--with-gates`. It stops for an explicit migration
+decision if files there are already tracked. It does not ignore all of `.aw/`.
+Templates and durable documentation remain tracked.
+
+Resume by explicit ID/path or matching plan, ticket or spec; ask among multiple
+matches. Reconcile repository/checkout, branch, HEAD, source units, live changes,
+PRs and jobs before restoring stable U IDs (or local T IDs) and next action.
+One coordinator rereads before updating the snapshot, preserving human notes.
+Evidence carries its observed code state and never substitutes for current tests,
+review, receipts or gates. Unsupported/corrupt records are preserved for recovery.
+
+Coordination status (`active`, `blocked`, `paused`, `awaiting-human`, `closed`)
+is separate from outcome (`in-progress`, `ready-for-review`, `complete`, `cancelled`).
+Prepare closure with actual checks, skips, risks and remaining work. Ask for human
+acceptance and separate keep/export/remove disposition. Silence or completion
+alone retains the record; cancellation preserves unfinished scope. Removal needs
+approval of the exact file and loss of local-only contents, safe path checks and
+verified export when requested. `aw-refresh cleanup` has an explicit progress
+case; `closed` is not archived-artifact deletion permission.
+
+Ignored records have no Git history, backup or clone/pull/worktree transfer. Keep
+secrets out; forced adds, `git clean -x` and checkout loss remain possible. Use
+`aw-capture` for valuable durable knowledge; active progress is not automatically
+ingested into memory/synthesis. Transfer only by an approved handoff naming both
+paths, preserving ID, pausing/relinquishing the source, and revalidating destination
+context. An ignored local archive still has no Git backup.
+
 ### Skill tracking (`tracking`)
 
 When `tracking.enabled` is true, every skill emits `node .scripts/aw-gate.js track <skill>` at its first step, appending a JSONL line (`ts`, `session_id`, `skill`, optional `workflow_step`, `source: "skill"`) to `tracking.path` (`docs/metrics/skills.jsonl` by default, month-sharded → `skills-YYYY-MM.jsonl`). The workflow-step mapping is owned by `aw-gate.js`; per-repo `workflow.steps.<step>.skill` overrides win when present.

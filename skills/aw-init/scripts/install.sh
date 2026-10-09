@@ -26,7 +26,8 @@ What it does:
   6. Creates global ~/.agents/learnings/index.yml if missing.
   7. Installs .claude/hooks/log-session.sh and merges a Stop hook into .claude/settings.json for automatic session logging (Claude Code only).
   8. With --with-gates, installs the deterministic .scripts/aw-gate.js helper (freshness gates, telemetry, org-knowledge sync) and gitignores its per-checkout state.
-  9. Prints recommended next steps.
+  9. Gitignores /.aw/workstreams/ for local progress records, with or without gates.
+  10. Prints recommended next steps.
 
 Existing files are preserved unless --force is passed.
 Existing non-symlink skill directories are always preserved.
@@ -531,8 +532,37 @@ install_skill_links() {
   link_skill_dir "$HOME/.windsurf/skills"
 }
 
+check_workstream_collisions() {
+  # Ignore rules cannot untrack existing data. Check before any install writes,
+  # including --force, so migration remains an explicit human decision.
+  if git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    local tracked
+    tracked="$(git -C "$repo_dir" ls-files -- .aw/workstreams/)"
+    if [ -n "$tracked" ]; then
+      echo "tracked workstream collision in $repo_dir/.aw/workstreams/:" >&2
+      printf '%s\n' "$tracked" >&2
+      echo "Stop for an explicit migration decision; no files were untracked or overwritten." >&2
+      exit 1
+    fi
+  fi
+}
+
+install_workstream_ignore() {
+  local gitignore="$repo_dir/.gitignore"
+  local entry='/.aw/workstreams/'
+  if [ ! -f "$gitignore" ] || ! grep -Fqx "$entry" "$gitignore"; then
+    # Preserve a final entry even when the existing file lacks a newline.
+    if [ -s "$gitignore" ] && [ -n "$(tail -c 1 "$gitignore")" ]; then
+      printf '\n' >> "$gitignore"
+    fi
+    printf '%s\n' "$entry" >> "$gitignore"
+    echo "gitignore: $entry"
+  fi
+}
+
 install_repo_files() {
   mkdir -p "$repo_dir"
+  install_workstream_ignore
 
   copy_agents_prompted "$artifact_dir/AGENTS.md" "$repo_dir/AGENTS.md"
   copy_prompted "$artifact_dir/CLAUDE.md" "$repo_dir/CLAUDE.md"
@@ -671,6 +701,10 @@ PYEOF
 }
 
 resolve_source
+
+if [ "$skip_repo" -ne 1 ]; then
+  check_workstream_collisions
+fi
 
 if [ "$skip_skills" -ne 1 ]; then
   install_skills

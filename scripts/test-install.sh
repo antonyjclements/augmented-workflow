@@ -16,6 +16,7 @@ for pair in \
   "docs/workflow/field-guide.md:skills/aw-init/artifacts/field-guide.md" \
   "docs/workflow/gates.md:skills/aw-init/artifacts/gates.md" \
   "docs/workflow/org-knowledge.md:skills/aw-init/artifacts/org-knowledge.md" \
+  "docs/workflow/tracking.md:skills/aw-init/artifacts/tracking.md" \
   "docs/metrics/README.md:skills/aw-init/artifacts/metrics-readme.md" \
   "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
   "docs/solutions/README.md:skills/aw-init/artifacts/solutions-readme.md" \
@@ -354,6 +355,9 @@ aw_init_learnings="$tmp_root/aw-init-learnings"
   --force
 
 assert_repo_install "$aw_init_target"
+# @spec:PROG-001 — Local records are ignored even without optional gates.
+assert_equal "$(grep -Fxc '/.aw/workstreams/' "$aw_init_target/.gitignore" || true)" "1" "default workstream ignore rule"
+assert_not_path "$aw_init_target/.scripts/aw-gate.js"
 assert_file "$aw_cli_log"
 assert_equal "$(sed -n '1p' "$aw_cli_log")" "$(cd "$aw_init_target" && pwd)" "aw init target"
 assert_file "$aw_init_skills/aw-init/SKILL.md"
@@ -467,6 +471,49 @@ YAML
 assert_not_contains "$unknown_shape_target/docs/standards/index.yml" "docs/standards/e2e-coverage.md"
 validate_docs_indexes "$unknown_shape_target"
 
+# @spec:PROG-001 — Reinstall, narrow scope, and tracked collision refusal.
+progress_target="$tmp_root/progress-target"
+mkdir -p "$progress_target"
+git -C "$progress_target" init -q
+printf 'existing-entry' > "$progress_target/.gitignore"
+for install_pass in 1 2; do
+  "$repo_root/skills/aw-init/scripts/install.sh" --repo "$progress_target" \
+    --skip-skills --skip-skill-links --learnings-dir "$tmp_root/progress-learnings" </dev/null > "$tmp_root/progress-install.log"
+done
+assert_equal "$(grep -Fxc '/.aw/workstreams/' "$progress_target/.gitignore")" "1" "reinstalled workstream ignore rule"
+assert_equal "$(sed -n '1p' "$progress_target/.gitignore")" "existing-entry" "preserve unterminated ignore entry"
+mkdir -p "$progress_target/.aw/workstreams/demo-a7f2" "$progress_target/skills/aw-work/references"
+printf 'local state\n' > "$progress_target/.aw/workstreams/demo-a7f2/progress.md"
+cp "$repo_root/skills/aw-work/references/progress-template.md" "$progress_target/skills/aw-work/references/"
+git -C "$progress_target" check-ignore -q .aw/workstreams/demo-a7f2/progress.md
+assert_equal "$(git -C "$progress_target" ls-files -- .aw/workstreams/)" "" "record remains untracked"
+for trackable in skills/aw-work/references/progress-template.md docs/workflow/README.md .aw/other.md nested/.aw/workstreams/example.md; do
+  if git -C "$progress_target" check-ignore -q "$trackable"; then
+    echo "workstream rule unexpectedly ignores $trackable" >&2
+    exit 1
+  fi
+done
+# Nearby tracked paths are allowed; a forced-add collision must fail, even with --force.
+printf 'nearby\n' > "$progress_target/.aw/other.md"
+git -C "$progress_target" add .aw/other.md
+"$repo_root/skills/aw-init/scripts/install.sh" --repo "$progress_target" \
+  --skip-skills --skip-skill-links --learnings-dir "$tmp_root/progress-learnings" </dev/null > "$tmp_root/progress-install.log"
+git -C "$progress_target" add -f .aw/workstreams/demo-a7f2/progress.md
+printf 'human guidance\n' > "$progress_target/AGENTS.md"
+cp "$progress_target/.gitignore" "$tmp_root/progress-ignore-before"
+if "$repo_root/skills/aw-init/scripts/install.sh" --repo "$progress_target" \
+  --skip-skills --skip-skill-links --force --learnings-dir "$tmp_root/progress-learnings" \
+  > "$tmp_root/progress-collision.log" 2>&1; then
+  echo "expected tracked workstream collision to stop installation" >&2
+  exit 1
+fi
+assert_contains "$tmp_root/progress-collision.log" "tracked workstream collision"
+assert_contains "$tmp_root/progress-collision.log" "explicit migration decision"
+assert_equal "$(cat "$progress_target/AGENTS.md")" "human guidance" "collision preserves guidance"
+cmp "$progress_target/.gitignore" "$tmp_root/progress-ignore-before"
+assert_equal "$(cat "$progress_target/.aw/workstreams/demo-a7f2/progress.md")" "local state" "collision preserves record"
+git -C "$progress_target" ls-files --error-unmatch .aw/workstreams/demo-a7f2/progress.md >/dev/null
+
 # --with-gates installs the deterministic gate helper and gitignores its state.
 gates_target="$tmp_root/gates-target"
 gates_learnings="$tmp_root/gates-learnings"
@@ -479,6 +526,10 @@ gates_learnings="$tmp_root/gates-learnings"
   --force
 
 assert_file "$gates_target/.scripts/aw-gate.js"
+assert_equal "$(grep -Fxc '/.aw/workstreams/' "$gates_target/.gitignore")" "1" "gate-enabled workstream ignore rule"
+"$repo_root/skills/aw-init/scripts/install.sh" --repo "$gates_target" --with-gates \
+  --skip-skills --skip-skill-links --learnings-dir "$tmp_root/progress-learnings" </dev/null > "$tmp_root/progress-gates-reinstall.log"
+assert_equal "$(grep -Fxc '/.aw/workstreams/' "$gates_target/.gitignore")" "1" "gate-enabled reinstall ignore rule"
 assert_contains "$gates_target/.gitignore" ".aw-gate-state.json"
 assert_contains "$gates_target/.gitignore" ".aw-org-cache/"
 assert_contains "$gates_target/.gitignore" ".aw/tmp/"

@@ -23,6 +23,15 @@ That said, some parts of the system pay back from the start:
 
 Install the workflow on any project. Start with decisions and session logs. Let the rest earn its place as the project matures.
 
+For work spanning sessions, `aw-work` keeps a local progress record at
+`.aw/workstreams/<workstream-id>/progress.md`, with stable unit IDs, next action
+and evidence. Resume with its ID or exact path; the agent reconciles live context
+before continuing. Every repository install adds `/.aw/workstreams/` to
+`.gitignore`, independently of optional gates. These records have no Git backup
+and require an explicit handoff between worktrees. Closure asks for acceptance
+and a separate keep/export/remove choice; completion alone retains the file.
+See [local workstream guidance](docs/workflow/README.md#local-workstream-progress).
+
 ## Presentations
 
 - [Overview deck](https://antonyjclements.github.io/augmented-workflow/) — the adoption story: the collaboration problems product teams already have, shared living memory, and the workflow that fixes both human↔agent and human↔human.

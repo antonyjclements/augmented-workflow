@@ -1,4 +1,11 @@
 features:
+  - key: progress-tracking
+    title: Local Workstream Progress Tracking
+    spec: docs/features/progress-tracking/spec.md
+    status: active
+    tags:
+      - workflow
+      - continuity
   - key: experience-discovery
     title: Experience Discovery
     spec: docs/features/experience-discovery/spec.md

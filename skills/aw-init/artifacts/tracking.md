@@ -22,7 +22,13 @@ tracking:
   session_ttl_hours: 8                 # mint a new session id when the file is older
 ```
 
-Add `.aw/` to `.gitignore` and `docs/metrics/skills*.jsonl merge=union` to `.gitattributes` (`aw-init` handles both when tracking is enabled).
+Use narrow ignore rules: `.aw/session` for the tracking session ID and
+`/.aw/workstreams/` for local progress records. Do not assume all of `.aw/` is
+ignored. `aw-init --with-gates` adds the session rule and
+`docs/metrics/skills*.jsonl merge=union` to `.gitattributes`; every repository
+install adds the workstreams rule independently of gates. Skill invocation logs
+are separate from execution progress; see `docs/workflow/README.md` for the local
+workstream lifecycle.
 
 ## When a skill emits
 

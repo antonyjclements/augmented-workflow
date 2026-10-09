@@ -29,3 +29,4 @@ node_modules/
 
 # Isolated feature worktrees created by aw-create-worktree
 .worktrees/
+/.aw/workstreams/

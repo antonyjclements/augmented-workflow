@@ -79,6 +79,23 @@ After creating the worktree, read `docs/workflow/config.yml` in the worktree and
 - otherwise use `aw-work`
 - apply `workflow.implementation.test_policy`, defaulting to `acceptance-first` when blank or missing
 
+## Local progress handoff
+
+A new worktree or clone does not inherit ignored
+`.aw/workstreams/<workstream-id>/progress.md` records. Do not automatically copy
+them or remove a worktree containing local-only progress before the human chooses
+its disposition. An approved transfer must name the source record and destination;
+obtain authorization for destinations outside the current workspace.
+
+Preserve the workstream ID and human notes. Check destination collisions before
+copying; do not overwrite another record. Pause the source, note its destination
+and resume condition, and explicitly relinquish its coordinator. Verify the copy,
+assign destination checkout/coordinator, and reconcile repository identity,
+branch, HEAD, source links, units, working-tree changes, PR state and running jobs
+before work resumes. Only one copy actively coordinates. Old checks and gate
+receipts/state are historical, not current verification. Keep the source unless
+its exact removal and loss of local-only contents are separately approved.
+
 ## Troubleshooting
 
 **"Worktree already exists"**: the path is already in use. Either switch to it (`cd .worktrees/<branch>`) or remove it (`git worktree remove .worktrees/<branch>`) before recreating.

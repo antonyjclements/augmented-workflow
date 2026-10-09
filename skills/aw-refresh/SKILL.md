@@ -183,7 +183,30 @@ Optional fields when present in spec frontmatter: `owner`, `updated`, `related_d
 
 ## Cleanup
 
-Remove workflow artifacts whose frontmatter or index entry has `status: archived`. Git is the archive; the working tree keeps only current source-of-truth artifacts.
+Remove workflow artifacts whose frontmatter or index entry has `status: archived`.
+Git preserves tracked artifacts. Local progress uses the separate explicit case
+below because Git has no copy of ignored contents.
+
+### Explicit local progress cleanup
+
+Only when the user explicitly selects progress cleanup or names a record, inspect
+`.aw/workstreams/<workstream-id>/progress.md`. Exclude these records from default
+archived scans and `all`; `closed` is not `archived`, and neither status authorizes
+removal. Do not automatically ingest active progress into memory or synthesis.
+
+Show the exact path, closure/evidence summary and any valuable uncaptured knowledge;
+offer `aw-capture` before removal. Ask for a separate keep/export/remove choice
+and approval of the loss of local-only contents. Acceptance, cancellation, age or
+silence never implies deletion; keep by default. Export only to a named authorized
+destination and verify the requested copy/summary before separately approved removal.
+
+Before removal, reread and reconcile unexpected edits. Check the record is
+untracked and resolves inside the selected workstream directory; reject traversal,
+symlinked files or ancestors and tracked collisions. Preserve unsupported or
+malformed originals for explicit recovery rather than overwriting them. Delete
+only the specifically approved file, never recursively remove its directory or
+unrelated files. A local ignored archive still has no Git backup. Dry-run reports
+candidates and performs no export or deletion.
 
 ### Scope
 
@@ -221,7 +244,9 @@ Never delete:
 
 ### Rules
 
-- Do not infer archive status from age, completion, promotion, or supersession. Only `status: archived` permits deletion.
+- Do not infer archive status from age, completion, promotion, or supersession.
+  The archived-artifact workflow selects only `status: archived`; local progress
+  follows its separate explicit case above. Status alone never authorizes deletion.
 - Do not mark artifacts archived in this skill unless the user explicitly asks for that too.
 - Do not remove a promoted PRD automatically. Promotion preserves provenance; archive status is the separate cleanup signal.
 - If git is unavailable, do not delete files unless the user explicitly confirms that external history is acceptable.

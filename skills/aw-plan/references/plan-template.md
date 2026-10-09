@@ -165,6 +165,11 @@ deepened: YYYY-MM-DD  # optional, set when the confidence check substantively st
 
 ## Implementation Units
 
+Execution progress stays in the session tracker and, for long-running work, a
+local `.aw/workstreams/<workstream-id>/progress.md` referencing this plan and its
+stable U IDs. Keep live checkboxes and checkpoints out of the plan. The ignored
+record belongs to its checkout and is transferred only by explicit handoff.
+
 <!-- Each unit carries a stable plan-local U-ID (U1, U2, …) assigned sequentially.
      U-IDs are never renumbered: reordering preserves them in place, splitting keeps the
      original U-ID and assigns the next unused number to the new unit, deletion leaves

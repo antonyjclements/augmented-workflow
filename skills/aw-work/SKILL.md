@@ -1,7 +1,7 @@
 ---
 name: aw-work
 description: "Implement a plan, spec, ticket, or bare work request through to verified, ship-ready code, applying the repo's configured test policy and standards. Use when the user says 'implement this', 'build it', 'work on this', 'pick up this ticket', 'start on the plan', or hands over a plan/spec/ticket path or ID. For diagnosing a bug first, use aw-debug; for deciding what to build, use aw-brainstorm or aw-plan."
-argument-hint: "[Plan doc path or description of work. Blank to auto use latest plan doc]"
+argument-hint: "[Workstream ID/path, plan/spec/ticket, or description. Blank resolves local progress before a plan]"
 ---
 
 # Work Execution Command
@@ -17,9 +17,14 @@ First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track a
 - ticket/story identifier or URL
 - plan/spec path
 - bare work description
-- blank: use latest active plan at `docs/features/*/plan.md`
+- workstream ID or `.aw/workstreams/<id>/progress.md`: resume that local record
+- blank: resolve a matching workstream first; otherwise use latest active plan
 
 ## Phase 0: Triage
+
+Check for existing local workstream records. For an explicit resume or possible match, read
+`references/progress-tracking.md` and resolve it before choosing a plan. Never
+choose among multiple progress records by recency. Leave short tasks lightweight.
 
 If ticket/story: read it through the configured ticketing tool when available, then load linked spec, plan, decisions, and standards before editing.
 
@@ -86,6 +91,11 @@ Set up branch/worktree:
 
 Create/update task tracker from units, preserving unit IDs when present.
 
+For multi-unit, cross-session, blocked/paused or handoff work, follow
+`references/progress-tracking.md` and `references/progress-template.md`: reconcile
+live context, create/resume `.aw/workstreams/<id>/progress.md`, and restore stable
+IDs and the next action. Keep this local record separate from plan progress.
+
 Keep optional verification capabilities lazy:
 
 - If the effective policy is `characterization-first`, read
@@ -104,6 +114,8 @@ top of it:
 - apply the effective implementation test policy, honoring stronger
   TDD/test-first/characterization notes in the plan when present
 - update task status as work completes
+- checkpoint unit outcomes, evidence, changed blockers/decisions, pauses and
+  handoffs in an existing progress record; only its coordinator writes it
 - Preserve spec traceability through the deterministic helper. Subagents return
   annotation intents to the parent; they do not call `trace-annotate` directly.
   The parent writes one `.aw/tmp/trace-intents.<token>.json` batch and runs
@@ -123,6 +135,9 @@ browser checks as the change warrants. If optional e2e or characterization
 references were loaded in Phase 1, follow their Phase 3 verification notes.
 
 If tests cannot run, record why. Fix failures caused by the change. Do not hide unrelated pre-existing failures; summarize them separately.
+
+Checkpoint actual verification results with code-state context in the progress
+record. Historical notes never substitute for current checks or gate evidence.
 
 ## Phase 4: Review and Polish
 
@@ -150,6 +165,9 @@ Only when implementation and verification are complete:
 - list tests/checks run and failures
 - identify residual risks or follow-ups
 - do not commit/push/PR unless the user asks or invoked a workflow that includes it
+- checkpoint handoff or closure in any progress record using
+  `references/progress-tracking.md`; ask for human acceptance and separate
+  keep/export/remove disposition. Silence or completion alone retains the file.
 
 ## Rules
 
