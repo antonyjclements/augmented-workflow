@@ -12,8 +12,21 @@ version has no entry here.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-09
+
 ### Added
 
+- Checkout-local progress tracking for long-running work in
+  `.aw/workstreams/<workstream-id>/progress.md`: versioned Markdown records,
+  stable unit IDs, live-context reconciliation on resume, coordinator checkpoints,
+  and human acceptance with separate keep/export/remove choices. `aw-work`,
+  `aw-refresh cleanup`, and `aw-create-worktree` document the lifecycle and
+  deliberate handoff. Records remain local and have no Git backup or automatic
+  synchronization.
+- Every repository install adds the narrow root ignore rule `/.aw/workstreams/`,
+  independently of `--with-gates`, and stops for an explicit migration decision
+  when the directory contains tracked files. Re-run `aw-init` to refresh installed
+  guidance and add the rule; no configuration migration is required.
 - Experience discovery in `aw-brainstorm`, with an intake pointer from `aw-work`:
   interpret human outcomes and references, suggest a disposable prototype, wait
   for agreement, and use human reaction to refine living intent. Explicit
