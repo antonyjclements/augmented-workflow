@@ -3,3 +3,5 @@
 {"ts":"2026-10-09T20:57:44.090Z","event":"synthesize","detail":null,"source":"aw-gate"}
 {"ts":"2026-10-09T20:59:09.910Z","event":"review","detail":"Full feature diff reviewed previously; shipping metadata and trace scenario changes reviewed now.","source":"aw-gate"}
 {"ts":"2026-10-09T20:59:09.972Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}
+{"ts":"2026-10-10T00:53:06.825Z","event":"review","detail":"Scoped version release review.","source":"aw-gate"}
+{"ts":"2026-10-10T00:53:06.894Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}
