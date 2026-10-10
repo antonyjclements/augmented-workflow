@@ -8,3 +8,4 @@
 {"ts":"2026-10-10T15:17:18.143Z","event":"synthesize","detail":"no-source-audit","source":"aw-gate"}
 {"ts":"2026-10-10T15:18:02.943Z","event":"review","detail":"code-and-spec-review","source":"aw-gate"}
 {"ts":"2026-10-10T15:18:03.454Z","event":"check_workflow_compliance","detail":"bootstrap-pending-push","source":"aw-gate"}
+{"ts":"2026-10-10T15:30:43.501Z","event":"check_workflow_compliance","detail":"post-push-review","source":"aw-gate"}
