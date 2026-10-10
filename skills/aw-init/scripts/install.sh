@@ -321,8 +321,21 @@ install_agentic_workflows() {
     esac
   fi
 
-  (cd "$repo_dir" && aw init)
-  echo "agentic workflows: initialized $repo_dir"
+  # Use the source already resolved by this installer, including extracted pinned
+  # archives. Upgrade handles repo migration without invoking this installer again.
+  # Never fall back to legacy init: it can overwrite customized repo files.
+  # Legacy aw-cli accepts upgrade/source/repo but lacks the safe preview flag.
+  # Probe the full plan first; never invoke its mutating upgrade on probe failure.
+  if ! aw upgrade --source "$source_dir" --repo "$repo_dir" --dry-run; then
+    echo "agentic workflows failed: requires aw-cli with same-source upgrade support and --dry-run (aw upgrade --source PATH --repo PATH --dry-run), plus Ruby for config migration." >&2
+    echo "No legacy aw init fallback was attempted. Earlier installer steps may already have changed files; review them before retrying with a compatible CLI." >&2
+    return 1
+  fi
+  if ! aw upgrade --source "$source_dir" --repo "$repo_dir"; then
+    echo "agentic workflows upgrade failed; no legacy init fallback was attempted. Review the output before retrying." >&2
+    return 1
+  fi
+  echo "agentic workflows: upgraded $repo_dir from $source_dir"
 }
 
 write_file_if_missing() {
@@ -714,6 +727,7 @@ Next steps:
 8. Optional enforcement, telemetry, org knowledge, traceability, workflow trace, and behavior pins (see docs/workflow/README.md):
    Re-run install with --with-gates to add .scripts/aw-gate.js. Set gates.enabled/telemetry.enabled/org_knowledge.source/trace.enabled/workflow_trace.enabled/pin.enabled
    in docs/workflow/config.yml, then wire \`node .scripts/aw-gate.js check\` and optionally \`trace\` / \`pin\` into a pre-push hook or CI job.
-9. aw-cli initializes the target repo with \`aw init\` when available. To add it later, run:
-   pipx install git+https://github.com/antonyjclements/aw-cli.git && aw init
+9. A compatible aw-cli upgrades the target repo from this same prepared source when available.
+   To add it later, install aw-cli with pipx and rerun this reviewed installer with the same source options.
+   Config migration requires Ruby; old aw-cli versions fail without falling back to legacy init.
 EOF

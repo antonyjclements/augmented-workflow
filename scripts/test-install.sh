@@ -330,24 +330,43 @@ export HOME="$tmp_root/home"
 mkdir -p "$HOME"
 
 # A shim lets the installer exercise a locally available aw-cli without a
-# real aweb connection. Its invocation log also proves that initialization
-# happens after repo setup.
+# real aweb connection. Require the exact prepared source and target, and
+# reject init so a legacy fallback cannot pass.
 aw_cli_bin="$tmp_root/aw-cli-bin"
 aw_cli_log="$tmp_root/aw-cli.log"
 mkdir -p "$aw_cli_bin"
 cat > "$aw_cli_bin/aw" <<'SH'
 #!/usr/bin/env bash
-if [ "$1" = "init" ]; then
-  printf '%s\n' "$PWD" >> "$AW_CLI_LOG"
-  exit 0
+set -euo pipefail
+printf '%s\n' "$@" >> "$AW_CLI_LOG"
+# Old CLI accepted the mutating upgrade but not safe --dry-run. Accepting its
+# old argument shape here catches an unsafe apply-only compatibility check.
+if [ "${AW_CLI_LEGACY:-0}" = 1 ]; then
+  [ "$#" -eq 5 ] && exit 0
+  exit 2
 fi
-exit 1
+if [ "$#" -eq 6 ]; then
+  [ "$6" = --dry-run ]
+else
+  [ "$#" -eq 5 ]
+fi
+[ "$1" = upgrade ]
+[ "$2" = --source ]
+[ "$4" = --repo ]
+[ -f "$3/aw-version.txt" ]
+[ -f "$3/skills/aw-init/scripts/upgrade.sh" ]
+[ -f "$5/AGENTS.md" ]
+# A remote archive must be passed while its extracted source is still alive.
+if [ -n "${AW_CLI_EXPECT_REMOTE:-}" ]; then
+  [ "$3" != "$AW_CLI_EXPECT_REMOTE" ]
+  [ -f "$3/cli-source-sentinel" ]
+fi
 SH
 chmod +x "$aw_cli_bin/aw"
 export PATH="$aw_cli_bin:$PATH"
 export AW_CLI_LOG="$aw_cli_log"
 
-aw_init_target="$tmp_root/aw-init-target"
+aw_init_target="$tmp_root/aw init target"
 aw_init_skills="$tmp_root/aw-init-skills"
 aw_init_learnings="$tmp_root/aw-init-learnings"
 
@@ -362,7 +381,28 @@ assert_repo_install "$aw_init_target"
 assert_equal "$(grep -Fxc '/.aw/workstreams/' "$aw_init_target/.gitignore" || true)" "1" "default workstream ignore rule"
 assert_not_path "$aw_init_target/.scripts/aw-gate.js"
 assert_file "$aw_cli_log"
-assert_equal "$(sed -n '1p' "$aw_cli_log")" "$(cd "$aw_init_target" && pwd)" "aw init target"
+assert_equal "$(cat "$aw_cli_log")" "$(printf '%s\n' upgrade --source "$repo_root" --repo "$aw_init_target" --dry-run upgrade --source "$repo_root" --repo "$aw_init_target")" "same-source CLI preview then upgrade"
+
+# An incompatible CLI must fail without retrying init or reporting success.
+legacy_log="$tmp_root/legacy-cli.log"
+if AW_CLI_LEGACY=1 AW_CLI_LOG="$legacy_log" "$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$tmp_root/legacy-cli-target" --skip-skills --learnings-dir "$tmp_root/legacy-learnings" \
+  > "$tmp_root/legacy-cli-output" 2>&1; then
+  echo "incompatible aw-cli should stop installation" >&2
+  exit 1
+fi
+assert_equal "$(wc -l < "$legacy_log" | tr -d '[:space:]')" "6" "one CLI preview, no unsafe upgrade or init fallback"
+assert_equal "$(head -n 1 "$legacy_log")" upgrade "legacy CLI command"
+assert_contains "$tmp_root/legacy-cli-output" "requires aw-cli with same-source upgrade support"
+assert_not_contains "$tmp_root/legacy-cli-output" "Installed augmented-workflow."
+
+# Previews and skills-only installs never enter the CLI or a nested installer.
+for flag in --dry-run --skip-repo; do
+  skip_log="$tmp_root/skip-cli.log"
+  AW_CLI_LOG="$skip_log" "$repo_root/skills/aw-init/scripts/install.sh" \
+    --repo "$tmp_root/skip-cli-target" --skip-skills "$flag" --learnings-dir "$tmp_root/skip-learnings" > /dev/null
+  assert_not_path "$skip_log"
+done
 assert_file "$aw_init_skills/aw-init/SKILL.md"
 assert_file "$aw_init_skills/aw-version.txt"
 assert_file "$aw_init_skills/aw-init/scripts/upgrade-config.rb"
@@ -1561,7 +1601,10 @@ assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "research_sla
 assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "skill: enterprise-slack-research"
 
 remote_archive="$tmp_root/augmented-workflow-source.tar.gz"
-tar -czf "$remote_archive" -C "$repo_root" .
+mkdir -p "$tmp_root/archive-extra"
+printf '%s\n' 'prepared remote source' > "$tmp_root/archive-extra/cli-source-sentinel"
+tar -czf "$remote_archive" -C "$repo_root" . -C "$tmp_root/archive-extra" cli-source-sentinel
+export AW_CLI_EXPECT_REMOTE="$repo_root"
 
 bundled_skills="$tmp_root/bundled-skills"
 bundled_target="$tmp_root/bundled-target"

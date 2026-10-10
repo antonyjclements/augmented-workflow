@@ -915,10 +915,19 @@ skills/aw-init/scripts/install.sh --remote --repo .             # fetch latest s
 skills/aw-init/scripts/install.sh --source-url URL --repo .     # fetch source from a pinned archive or mirror
 ```
 
-When the standalone aw-cli (`aw`) is available, the installer also runs `aw init`
-in the target repo. If it is missing during an interactive install, it asks before
-installing `git+https://github.com/antonyjclements/aw-cli.git` with `pipx`;
-non-interactive installs leave it unchanged and print the command to run later.
+When the standalone aw-cli (`aw`) is available, the installer runs
+`aw upgrade --source <prepared-source> --repo <target-repo>`. The CLI must support
+this same-source upgrade interface including `--dry-run`; the installer previews
+before applying so older unsafe CLI upgrades are never invoked. Config migration
+also requires Ruby. Local
+checkouts and pinned remote archives supply the same source to both installers,
+without another download or recursive installer invocation. CLI failure stops the
+install with no fallback to legacy `aw init`; earlier installer steps may already
+have written files, so review the output before retrying. If aw-cli is missing
+during an interactive install, the installer asks before installing
+`git+https://github.com/antonyjclements/aw-cli.git` with `pipx`; non-interactive
+installs leave it unchanged and print the installation command. After installing
+a compatible CLI, rerun the reviewed installer with the same source options.
 
 Environment overrides:
 

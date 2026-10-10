@@ -12,6 +12,11 @@ version has no entry here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Pass the installer’s prepared source to compatible aw-cli upgrades, preserving
+  pinned archives and avoiding unsafe legacy `aw init` fallback.
+
 ## [0.15.0] - 2026-10-09
 
 ### Added
