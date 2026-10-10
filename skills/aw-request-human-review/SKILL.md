@@ -9,6 +9,8 @@ argument-hint: "[spec|plan] [artifact path]"
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-request-human-review` (silent no-op otherwise).
 
 Create a small PR for product/engineering sign-off on a spec or plan artifact.
+This remains independently accessible from `aw-ship`; do not route artifact
+sign-off through the implementation shipping workflow.
 
 ## Configuration
 

@@ -2,7 +2,7 @@
 title: Spec-Driven Augmented Workflow
 status: active
 created: 2026-05-24
-updated: 2026-07-27
+updated: 2026-10-10
 tags:
   - workflow
   - specs
@@ -32,6 +32,8 @@ related_decisions:
   - docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md
   - docs/decisions/2026-05-25-delegate-ci-monitor-retry-policy.md
   - docs/decisions/2026-05-28-combine-brainstorm-and-spec-creation.md
+  - docs/decisions/2026-10-10-consolidate-spec-entrypoints.md
+  - docs/decisions/2026-10-10-consolidate-shipping-entrypoints.md
   - docs/decisions/2026-05-28-add-dedicated-prd-creation-skill.md
   - docs/decisions/2026-05-28-rename-skills-to-aw-prefix.md
   - docs/decisions/2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md
@@ -67,7 +69,7 @@ Augmented Workflow should make spec-driven development portable across repositor
 
 The workflow uses `AGENTS.md` as the portable orientation and routing file. The installer copies that file into a target repo, installs skills globally under `~/.agents/skills`, symlinks supported agent runtime skill directories to that canonical location when safe, writes `.augmented-workflow-version`, creates repo-local indexes for PRDs, features, standards, decisions, and learnings, and installs an editable PRD template at `docs/product/prds/template.md`. Brainstorms and session logs are self-describing files without an index.
 
-The global skill install writes `.augmented-workflow-skills` to record which `aw-*` skills are workflow-owned. Upgrade cleanup removes retired workflow-owned skills from that manifest, but preserves user-owned `aw-*` skills that live beside the bundled workflow skills. Older installs that predate the manifest seed cleanup from a conservative list of historical bundled `aw-*` entrypoints.
+The global skill install writes `.augmented-workflow-skills` to record which `aw-*` skills are workflow-owned. Upgrade cleanup removes retired workflow-owned skills from that manifest, but preserves user-owned `aw-*` skills that live beside the bundled workflow skills. Retirement requires verified content ownership, including pinned historical fingerprints for pre-manifest installs. Ambiguous or customized directories are preserved and reported, and an unowned `aw-spec` collision blocks installation. Preview migration before applying it; preserve recoverable backups for rollback.
 
 The repository root `aw-version.txt` is the single source for installer-owned workflow version markers. Installed `AGENTS.md` carries the same version stamp, and installers or migrators use `aw-version.txt` when running from a full source tree.
 
@@ -109,8 +111,8 @@ The workflow routes:
 
 ### Intake and Specs
 
-- A pasted, linked, or file-based PRD is persisted with `aw-prd` (import mode), then passed to `aw-brainstorm` when ambiguity remains. `aw-brainstorm` clarifies the product behavior and creates or updates the living spec in the same run.
-- Raw ideas can start with `aw-brainstorm`; the skill creates or updates a living spec when durable intent is ready.
+- A pasted, linked, or file-based PRD is persisted with `aw-prd` (import mode), then passed to `aw-spec` when ambiguity remains. `aw-spec` clarifies the product behavior and creates or updates the living spec in the same run.
+- Raw ideas can start with `aw-spec`; the skill creates or updates a living spec when durable intent is ready.
 - For consequential uncertainty about the intended human experience, brainstorm
   interprets goals and references, suggests a disposable prototype, and waits for
   agreement before creating it. Explicit requests already authorize their scope.
@@ -120,7 +122,8 @@ The workflow routes:
 - When the user wants a PRD as the output, `aw-prd` (create mode) authors one from an idea, brainstorm, notes, or clarified product direction. The skill uses `docs/product/prds/template.md` when a repo defines it, otherwise it falls back to its bundled PRD template.
 - PRDs use lifecycle statuses: `imported`, `draft`, `ready-for-spec`, `promoted`, `superseded`, and `archived`. Spec creation marks source PRDs `promoted` and records `promoted_to` without rewriting the PRD body.
 - Artifacts marked `status: archived` may be removed from the working tree by `aw-refresh cleanup`; git history is the archive.
-- Already-clear requirements, existing behavior, implementation-driven spec updates, or explicit spec drafts can use `aw-create-spec` directly.
+- Already-clear requirements, existing behavior, implementation-driven spec updates, or explicit spec drafts use `aw-spec` directly. Requested PRD, plan, research, or exploration-only output takes precedence over ambiguity. The shared writer preserves spec metadata, stable IDs, index schema and PRD body provenance.
+- `workflow.steps.brainstorm` and `workflow.steps.create_spec` retain independent custom providers. A valid spec from discovery skips duplicate writing, but only current hook evidence skips a hook. Bundled self-references resolve without recursion; unavailable providers are reported, never silently bypassed.
 - Each step returns the artifact path or ID that becomes the next step's input; the full handoff contract is documented in the installed `docs/workflow/README.md`.
 - After spec or plan creation, the agent offers a human sign-off PR only when `human_review.*.reviewers` is configured, the change is high-risk per task triage, or the user asked for review; otherwise it proceeds without interrupting.
 - Repos generate or refresh `docs/features/index.yml` from `docs/features/<feature>/spec.md` with `aw-refresh features`.
@@ -128,7 +131,7 @@ The workflow routes:
 ### Plans, Tickets, and Implementation
 
 - A plan may be created from the spec, but the plan remains temporary execution scaffolding at `docs/features/<feature>/plan.md` until removed.
-- Plans are reviewed with `aw-review plan` before human review, ticket creation, or implementation.
+- Plans are reviewed with the effective review provider (bundled: `aw-review <actual plan path>`) before human review, ticket creation, or implementation.
 - A plan may be turned into stories or tickets through `aw-create-tickets`. Repos can replace that step through `workflow.steps.create_tickets.skill`; when it is blank, the bundled step drafts the ticket split without creating external tickets.
 - Repos can override skill-backed workflow steps through `workflow.steps.<step>.skill` and auxiliary helper skills through `workflow.auxiliary.<key>.skill` in `docs/workflow/config.yml`. Blank values use the bundled default. Configured custom skills must preserve the same workflow contract: read relevant workflow config, accept the same handoff artifact or identifier, return the expected artifact path or ID, and report any unsupported contract element.
 - Repos can configure additive design-team hooks through `workflow.design` without replacing core lifecycle steps. Design hooks are disabled by default; when enabled, only hooks with a non-empty skill run. The hook keys are `prd_review`, `discovery`, `spec_review`, `plan_review`, `ticket_review`, `implementation_review`, and `pre_pr`. Lifecycle skills invoke configured hooks after PRD intake, brainstorming, spec creation, planning, ticket drafting or creation, implementation, and before PR creation respectively; `aw-help` recommends configured hooks when they match the user's current workflow position.
@@ -151,7 +154,7 @@ The workflow routes:
 - Repos can configure `pull_request.template.title` and `pull_request.template.body` with markdown template file refs from GitHub URLs, raw GitHub URLs, `file://` URLs, absolute paths, or repo-relative paths. Blank values use the default generated title/body.
 - Repos can configure `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` for enterprise-specific commit or shipping steps. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
 - There is no bundled pipeline monitor skill. After PR creation, `workflow.steps.monitor_pipeline.skill` is invoked with the PR URL when configured; when it is blank or `post_pr.ci_monitor.provider` is `manual` or missing, post-PR monitoring is skipped cleanly. Retry limits and polling cadence are owned by the configured monitor skill.
-- `aw-commit-push-pr` always carries changed `docs/metrics/**` workflow exhaust into PRs. Because shipping steps can append tracking or gate telemetry after the initial branch push, the skill checks `docs/metrics` again before PR creation and commits/pushes any local metric-file changes as `chore(metrics)` exhaust rather than leaving them behind.
+- `aw-ship full-pr` always carries changed `docs/metrics/**` workflow exhaust into PRs. Because shipping steps can append tracking or gate telemetry after the initial branch push, the skill checks `docs/metrics` again before PR creation and commits/pushes any local metric-file changes as `chore(metrics)` exhaust rather than leaving them behind.
 - `aw-gate.js check` warns, without failing, when `docs/metrics/**` contains tracked or untracked changes so shipping steps can commit the workflow exhaust before opening a PR.
 - Workflow exhaust is committed separately from feature work: session logs as `chore(session): log <slug>` commits and synthesis output as one batched `chore(memory): synthesize N sessions` commit. `docs/sessions/` files are never staged into feature or fix commits.
 
@@ -161,7 +164,7 @@ The workflow routes:
 - Freshness gates convert LLM-driven review, compliance, capture, and memory synthesis into a deterministic, agent-free CI/pre-push check. After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` stamp a git-ignored `gates.state_file` (recording the current time and commit) via `node .scripts/aw-gate.js record <gate>`. `aw-synthesize-memory` records `synthesize` every time it is invoked, including no-op runs. Each gate under `gates.checks` picks a `mode`: `age` (fresh within `max_age_hours`), `commit` (fresh while the gate's `paths` are unchanged since the recorded commit, compared against `HEAD` or, with `--against worktree`, the working tree), or `commit-and-age` (both). `age` is the default. `node .scripts/aw-gate.js check` exits non-zero when any gate fails its mode, and exits zero when `gates.enabled` is false. The workflow ships the script and the freshness contract; the consumer wires `check` into a pre-commit/pre-push hook or CI job.
 - Proof-of-work receipts close the gap where an agent could stamp a gate with `record <gate>` without running the skill. When `gates.require_receipt` is true (a per-gate `checks.<name>.require_receipt` overrides it; the tool defaults to false for backward compatibility, and the installer ships it true), the skill writes a git-ignored receipt via `node .scripts/aw-gate.js receipt <gate> --summary "..."`, and `record <gate>` refuses to stamp unless a fresh (`gates.receipt_max_age_minutes`, default 180), gate-matching, non-empty-summary receipt exists under `gates.receipt_dir` (default `.aw/receipts`). On success `record` folds a digest into the state entry and deletes the receipt so it is single-use and cannot re-stamp a later commit. `--no-receipt` bypasses the check with a stderr warning for bootstrap only. Receipts raise the floor from "one command clears the gate" to "produce recent, substantive, single-use evidence" and leave an auditable trail; they remain accountability, not proof that the review was good.
 - Telemetry: when `telemetry.enabled` is true, the same `record` call appends a no-PII event (`ts`, `event`, `detail`, `source`) to the git-tracked JSONL log (schema in `docs/metrics/README.md`) so effectiveness reporting can aggregate the flywheel directly from version control. The log is month-sharded by default (`telemetry.rotation: monthly` → `events-YYYY-MM.jsonl`) to bound growth and reduce merge contention, `aw-init --with-gates` registers `docs/metrics/events*.jsonl merge=union` in `.gitattributes` so concurrent appends merge without conflict, and `node .scripts/aw-gate.js prune-telemetry` (run by `aw-synthesize-memory`) deletes shards older than `telemetry.retention_months` with git history as the archive.
-- Skill tracking: when `tracking.enabled` is true, every skill invokes `node .scripts/aw-gate.js track <skill>` at its first step, which appends a git-tracked JSONL line (`ts`, `session_id`, `skill`, optional `workflow_step`, `source: "skill"`) to `tracking.path` (`docs/metrics/skills.jsonl`, month-sharded by default → `skills-YYYY-MM.jsonl`). `aw-gate.js` owns the canonical skill→workflow-step mapping and honors per-repo `workflow.steps.<step>.skill` overrides, so skills pass only their own name and auxiliary/meta skills are recorded with `workflow_step` omitted. Sessions are grouped through a git-ignored `tracking.session_file` (default `.aw/session`) whose UUID is reused while its mtime is within `tracking.session_ttl_hours`, so no hook or harness is required. The call is fire-and-forget: silent when tracking is disabled, the config is missing, or the writer errors — never blocks the caller. `aw-init --with-gates` registers `docs/metrics/skills*.jsonl merge=union` in `.gitattributes` alongside the telemetry entry, gitignores `.aw/session`, and copies `docs/workflow/tracking.md`; `prune-telemetry` also prunes tracking shards past `tracking.retention_months`. Tracking exists so cross-repo analysis can answer where the workflow breaks down, whether AW is making things faster (paired with GitHub PR data), and which parts of the workflow are used most; the emitter is enterprise-safe because it makes no network calls and requires no keys.
+- Skill tracking: when `tracking.enabled` is true, the dependency-free helper appends local, git-tracked JSONL events. Legacy `track <skill>` callers and historical rows retain their interpretation. Multi-stage `aw-spec` supplies the selected mode, actual stage and invocation ID, distinguishing one public invocation from internal stage executions. Auxiliary/meta legacy calls omit `workflow_step` as before. Disabled tracking writes nothing; tracking never blocks work. `docs/workflow/tracking.md` defines the precise schema, validation and aggregation rules. Sessions, monthly rotation, retention, union merge attributes and no-network/no-key behavior remain unchanged. Gate names and receipt semantics are independent of skill entrypoints.
 - Org-shared knowledge: setting `org_knowledge.source` to a git URL adds an org-wide learnings/standards tier alongside repo-local `docs/learnings/` and `docs/standards/`, replacing the per-machine `~/.agents/learnings/` fallback as the second tier. `node .scripts/aw-gate.js org-sync` shallow-clones or updates that repo into the git-ignored `org_knowledge.cache_dir`. `aw-capture`, `aw-synthesize-memory`, and `aw-discover-standards` consult the org tier (read-only) before writing repo-local knowledge; precedence is repo-local first, then org-shared.
 - Org knowledge is governed content, not just a synced folder: it has one accountable owner (a senior lead or distinguished engineer named in the org repo's `CODEOWNERS`), PR-reviewed changes, and self-describing entries (`authority`, `applies_to`, `owner`, `reviewed`/`review_by`, `source`). Agents treat org entries as advisory unless marked `authority: required`, always let repo-local guidance win, surface stale (past `review_by`) or conflicting `required` entries to a human, and never write to the org tier — promotion of a repo-local learning to org-wide status is a human-gated PR. The governance model and templates live in `docs/workflow/org-knowledge.md`; a summary is in the installed `docs/workflow/README.md`.
 - The config migrator (`upgrade-config.rb`) adds the `gates`, `telemetry`, `tracking`, and `org_knowledge` default sections to older configs while preserving existing overrides.
@@ -216,10 +219,111 @@ The workflow routes:
 - New installs also copy `docs/workflow/README.md`, `docs/workflow/field-guide.md`, and `docs/standards/coding-approach.md`, and the field guide is the first next-step the installer recommends. `aw-help` provides an interactive skill recommendation when the user is unsure where they are in the workflow.
 - Existing installs upgrade through `skills/aw-init/scripts/upgrade.sh`, which dry-runs before applying. Applying migration backs up the prior `docs/workflow/config.yml`, writes the migrated config, and updates `.augmented-workflow-version`. Migration preserves unknown fields and non-skill settings, adds missing current defaults, removes migrated legacy skill selector fields, and stops for manual review when old and new routing values conflict.
 - Legacy selector fields (`ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, `research.slack.skill`), legacy step keys (`import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code`), and legacy auxiliary keys (`index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, `log_session`) map to their current equivalents; the mapping is documented in the installed `docs/workflow/README.md` under Legacy Fields, not in `AGENTS.md`.
-- Existing installs can refresh skills and repo-local agent artifacts without a local clone by running the installer with `--remote` or a pinned `--source-url`. The remote source must contain the same repo layout as a GitHub archive of `augmented-workflow`.
+- Existing installs can refresh through a current, reviewed installer using `--remote` or a pinned `--source-url`. For the first consolidation migration, obtain the new installer separately: the already-running pre-consolidation installer retains unsafe legacy functions even when downloading new source. Never use that old bootstrap to perform this migration. The remote source must contain the repository archive layout. See the safe checkout recipe in `docs/workflow/README.md`.
 - Derived registries must either be validated or removed: `scripts/test-install.sh` validates every `docs/**/index.yml` (YAML parses, referenced paths exist, every feature spec is indexed) in this repository and in test-installed targets, and enforces the `AGENTS.md` word budget.
 - Before commit/PR, agents check whether `README.md` needs an update and make that update when setup, commands, configuration, architecture, repo structure, or workflow behavior changed. The installed `docs/workflow/README.md` documents the config schema beside `docs/workflow/config.yml`.
 - User-visible releases bump `aw-version.txt` (and the self-host `.augmented-workflow-version` in lockstep) and add a matching `CHANGELOG.md` entry in Keep a Changelog format, keyed to the version. `CHANGELOG.md` records user-visible changes — new or changed config keys, installer flags, skills, behavior, and migrations — and links to `docs/decisions/` for rationale rather than duplicating it. `scripts/test-install.sh` fails when the version in `aw-version.txt` has no `CHANGELOG.md` entry.
+
+## Spec Consolidation Contracts
+
+### AWSPEC-001 — One discoverable spec entrypoint
+
+The combined bundle exposes 20 skills, including `aw-spec` replacing the retired spec
+entrypoints. Direct and exploratory routes share one canonical bundled writer.
+
+### AWSPEC-002 — Requested output and artifact preservation
+
+Honor PRD, spec, plan, exploration-only and research outputs before ambiguity.
+Preserve PRD bodies/provenance, existing spec metadata/IDs and index schemas;
+plans remain temporary execution artifacts. Clear requests avoid compulsory interviews.
+
+### AWSPEC-003 — Unchanged action boundaries
+
+Spec work cannot authorize implementation, prototypes, deletion or publication.
+Prototype declines and human-review conditions remain effective. Tiny fixes retain
+the lightweight path; shipping consolidation is outside Phase 1.
+
+### AWSPEC-004 — Independent stages and accurate tracking
+
+Preserve independent brainstorm/create_spec providers and no-recursion self-routing.
+A valid returned spec prevents duplicate writing. Explicit tracking distinguishes
+one public invocation from actual internal stages while retaining legacy rows.
+Probe helper schema support before emitting v2 events; globally updated skills
+skip v2 tracking against old per-repo helpers and report the upgrade need.
+
+### AWSPEC-005 — Hook and review evidence
+
+Only applicable enabled non-empty hooks run, in PRD/discovery/spec order.
+Current evidence is required to skip duplicate hooks; an artifact alone does not
+prove review. Plan review receives the actual path before downstream handoff.
+
+### AWSPEC-006 — Safe owned-skill migration and rollback
+
+Preview and verify content ownership before replacing/retiring managed skills.
+Preserve ambiguous/custom content and stop on user-owned canonical-name collisions.
+Keep recoverable backups and verify compatible pinned-bundle rollback in fixtures.
+Refresh verified bundled helpers/routing with backups; preserve customized routing
+and block customized helper replacement unless explicitly approved. Bootstrap the
+first migration from reviewed new source, not a running legacy installer.
+
+### AWSPEC-007 — Honest comparative evidence
+
+Separate static contracts, deterministic integration checks and controlled model
+runs. Release requires safety/artifact/override parity plus measured practical
+benefit; unavailable runtime evidence blocks behavioral claims and release approval.
+
+### AWSPEC-008 — Separately gated shipping consolidation
+
+Phase 2 shipping consolidation was separately authorized after the Phase 1
+checkpoint. Its shared `aw-ship` entrypoint must preserve explicit local-commit,
+full-pr, description-only and description-update boundaries. Implementation approval alone does not authorize publication; commit/PR work
+requires separate explicit approval. Runtime permission evaluation remains a
+release gate rather than a claim inferred from static tests.
+
+
+## Shipping Consolidation Contracts
+
+### AWSHIP-001 — Explicit shipping modes
+
+One `aw-ship` entrypoint replaces the two shipping skills; share local commit
+mechanics through a lazy reference. Select local-commit, full-pr, description-only,
+or description-update from the requested outcome before any side effect.
+
+### AWSHIP-002 — Local-only and description permission boundaries
+
+Local commits never push or open/edit PRs. Description-only returns text without
+repository or PR writes, including no tracking/session writes, fetch or checkout.
+Description-update previews and confirms only the named existing PR text; no
+commits, push, new PR, publication gates or CI monitoring. Declines stop application.
+
+### AWSHIP-003 — Full workflow sequencing and existing PR handling
+
+Retain review, capture, spec/README/design checks, branch/commit safety, push,
+compliance, late metric flush and configured CI sequence. Preserve unrelated work;
+never push the default branch directly. Existing descriptions require rewrite
+confirmation; unavailable GitHub access is reported, never fabricated.
+
+### AWSHIP-004 — Independent shipping providers and telemetry
+
+Keep commit and commit_push_pr providers independent. Same-name bundled providers
+resolve the selected reference without recursion; valid completed work is not
+repeated. Unsupported provider contracts cannot broaden mode permissions.
+Probe shipping-tracking-schema before mutable-route events; description modes emit
+no events. One public shipping invocation correlates its actual internal stages.
+
+### AWSHIP-005 — Shipping migration and reversible ownership
+
+Verify owned legacy shipping content before retirement; preserve custom directories
+and block an unowned aw-ship collision. Test baseline22 and Phase1-21 to combined20
+upgrades, helper/routing compatibility and exact rollback. Use reviewed new source
+for the first migration, never the unsafe released remote bootstrap.
+
+### AWSHIP-006 — Separate evaluation and publication approval
+
+The second-phase implementation request authorizes no actual repository publication.
+Static contract assertions and deterministic helper/install tests cannot prove agent
+permission compliance. Repeated controlled runtime evaluation remains required
+before release; human sign-off PRs remain independently accessible.
 
 ## Acceptance Criteria
 
@@ -237,14 +341,14 @@ The workflow routes:
 - Every bundled `SKILL.md` stays within a word budget enforced by `scripts/test-install.sh` (currently 2,200 words), so detail that grows past it moves into `references/` rather than into the always-loaded skill body.
 - Every `references/` or `assets/` path named in a bundled `SKILL.md` exists; `scripts/test-install.sh` fails on a dangling skill reference, because a pointer to a missing file is an instruction the agent cannot follow.
 - `aw-capture solution` writes to `docs/solutions/<category>/YYYY-MM-DD-<slug>.md` using the bundled `references/solution-doc.md` schema, category mapping, and template; `aw-refresh solutions` maintains that tree, excluding `README.md` and `_archived/`.
-- Skills that reach GitHub (`aw-commit-push-pr`, `aw-resolve-pr-feedback`, `aw-debug`) resolve their access path before the first GitHub action — `gh` when available, GitHub MCP tools otherwise — and stay on that path for the run. When neither path reaches GitHub, they complete the local work and report which remote step did not run rather than reporting a PR, reply, or resolution that does not exist.
+- Skills that reach GitHub (`aw-ship full-pr`, `aw-resolve-pr-feedback`, `aw-debug`) resolve their access path before the first GitHub action — GitHub MCP tools when available, `gh` otherwise — and stay on that path for the run. When neither path reaches GitHub, they complete the local work and report which remote step did not run rather than reporting a PR, reply, or resolution that does not exist.
 - `scripts/test-install.sh` validates docs registries — every `docs/**/index.yml` parses, every indexed `path`/`spec` reference exists, and every `docs/features/*/spec.md` is indexed — for this repository and for each test-installed target repo.
 - Agents can discover and use the spec, standard, decision, and learning registries from `AGENTS.md`.
 - Installed `AGENTS.md` includes top-level task triage so trivial changes and small fixes can avoid the full spec/plan/review workflow when it is not warranted.
 - Repos using `docs/features/<feature>/spec.md` can generate a feature index with `aw-refresh features`.
 - Consolidated mode-routed skills exist: `aw-prd` (import/create), `aw-review` (code/spec/doc/simplify), `aw-capture` (decision/learning/solution/session), and `aw-refresh` (features/decisions/solutions/cleanup).
 - PRD promotion updates source PRD lifecycle metadata without rewriting PRD content, and archived artifacts can be removed from the working tree by `aw-refresh cleanup`.
-- `aw-brainstorm` can resolve ambiguous PRDs or raw ideas and create/update the living feature spec without requiring a separate `aw-create-spec` handoff; `aw-create-spec` remains available for direct spec creation.
+- `aw-spec` is the single spec entrypoint: direct requests avoid compulsory discovery, ambiguous intent uses discovery, and exploratory-only requests do not silently create accepted intent. The combined bundle has 20 skills; PRD and plan entrypoints remain separate.
 - Skill-backed workflow steps and auxiliary helpers can be overridden through `workflow.steps.<step>.skill` and `workflow.auxiliary.<key>.skill`; blank values preserve bundled defaults, and custom skills preserve the default step contract.
 - Additive design-team hooks can be configured through `workflow.design`; disabled or blank hooks skip cleanly, and configured hook skills preserve the design hook contract.
 - End-to-end test authoring can be configured through `workflow.auxiliary.e2e_tests.skill` and the `e2e` block; `e2e.enabled: false` or a blank skill skips the capability cleanly, and `e2e.run_scope` accepts only `affected`, `full`, or `none`. New installs write the `e2e` section disabled by default, and the config migrator adds the block with its defaults to existing installs.
@@ -254,7 +358,7 @@ The workflow routes:
 - The installed `docs/workflow/README.md` defines the `docs/workflow/config.yml` schema — value types, defaults, workflow step keys, auxiliary keys, implementation test policies, the artifact handoff contract, and the legacy field migration mapping.
 - Implementation test policy is configurable through `workflow.implementation.test_policy`; missing or blank values default to `acceptance-first`; the supported policies are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`.
 - `aw-work` and configured replacement work skills apply the configured implementation test policy and report tests, manual checks, acceptance coverage, and exceptions.
-- `aw-help`, `aw-prd`, `aw-brainstorm`, `aw-create-spec`, `aw-plan`, `aw-create-tickets`, `aw-work`, `aw-commit-push-pr`, and `aw-check-workflow-compliance` honor configured `workflow.design` hooks at their matching checkpoints.
+- `aw-help`, `aw-prd`, `aw-spec`, `aw-plan`, `aw-create-tickets`, `aw-work`, `aw-ship full-pr`, and `aw-check-workflow-compliance` honor configured `workflow.design` hooks at their matching checkpoints.
 - `aw-create-worktree` hands off to the configured work skill and implementation test policy after creating an isolated checkout.
 - Upgrades run through `skills/aw-init/scripts/upgrade.sh` in dry-run mode before applying; applying creates a timestamped backup, writes the migrated config, updates `.augmented-workflow-version`, preserves unknown fields, removes migrated legacy selector fields, and reports conflicts instead of choosing between incompatible values.
 - The installer supports a remote source path through `--remote`, `--source-url`, or `AUGMENTED_WORKFLOW_SOURCE_URL` so installed repos can fetch updated skills and agent artifacts without a local clone.

@@ -1,6 +1,6 @@
 ---
 name: aw-work
-description: "Implement a plan, spec, ticket, or bare work request through to verified, ship-ready code, applying the repo's configured test policy and standards. Use when the user says 'implement this', 'build it', 'work on this', 'pick up this ticket', 'start on the plan', or hands over a plan/spec/ticket path or ID. For diagnosing a bug first, use aw-debug; for deciding what to build, use aw-brainstorm or aw-plan."
+description: "Implement a plan, spec, ticket, or bare work request through to verified, ship-ready code, applying the repo's configured test policy and standards. Use when the user says 'implement this', 'build it', 'work on this', 'pick up this ticket', 'start on the plan', or hands over a plan/spec/ticket path or ID. For diagnosing a bug first, use aw-debug; for deciding what to build, use aw-spec or aw-plan."
 argument-hint: "[Workstream ID/path, plan/spec/ticket, or description. Blank resolves local progress before a plan]"
 ---
 
@@ -58,13 +58,13 @@ If bare prompt:
 3. Classify:
    - trivial: 1-2 files, no behavior change -> implement directly; discover tests if behavior-bearing
    - small/medium: clear scope under ~10 files -> create task list
-   - large/risky: cross-cutting, auth/payments/migrations/architecture, 10+ files -> recommend `aw-brainstorm` or `aw-plan`; honor user choice
+   - large/risky: cross-cutting, auth/payments/migrations/architecture, 10+ files -> recommend `aw-spec` or `aw-plan`; honor user choice
 4. Record the selected tier through the deterministic helper:
    `node .scripts/aw-gate.js workflow-record tier --tier <trivial|small_fix|feature|high_risk> --reason "<short reason>"`.
    The helper owns whether workflow trace is enabled and will no-op when disabled.
 
 When intake or later work exposes consequential uncertainty about the intended
-human experience, use the Experience Discovery loop in `aw-brainstorm`: explain
+human experience, use the exploratory Experience Discovery route in `aw-spec`: explain
 what a small prototype would clarify, suggest it, and wait for agreement before
 creating it. A general build request is not permission for a separate exploratory
 prototype. Reuse explicit prototype requests, prior agreement, and human feedback

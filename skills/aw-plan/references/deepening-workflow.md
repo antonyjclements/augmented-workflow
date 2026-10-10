@@ -213,7 +213,7 @@ When presenting findings from multiple agents targeting the same section, presen
 
 After all agents have been reviewed, carry only the accepted findings forward to 5.3.7.
 
-If the user accepted no findings, report "No findings accepted — plan unchanged." Then proceed directly to Phase 5.4 (skip document-review and synthesis — the plan was not modified). This interactive-mode-only skip does not apply in auto mode; auto mode always proceeds through 5.3.7 and 5.3.8. No explicit scratch cleanup needed — `$SCRATCH_DIR` is OS temp and will be cleaned up by the OS; leaving it in place preserves the rejected agent artifacts for debugging.
+If the user accepted no findings, report "No findings accepted — plan unchanged." Skip a repeat document review only when current actual review evidence exists for that unchanged plan; otherwise return through the parent skill's Phase 5 before handoff. This interactive-mode-only reuse does not apply to a modified plan; after integration, use Phase 5 with the actual written plan path. No explicit scratch cleanup needed — `$SCRATCH_DIR` is OS temp and will be cleaned up by the OS; leaving it in place preserves the rejected agent artifacts for debugging.
 
 If findings were accepted and the plan was modified, proceed through 5.3.7 and 5.3.8 as normal — document-review acts as a quality gate on the changes.
 
@@ -245,4 +245,6 @@ Do **not**:
 If research reveals a product-level ambiguity that should change behavior or scope:
 - Do not silently decide it here
 - Record it under `Open Questions`
-- Recommend `aw-brainstorm` if the gap is truly product-defining
+- Recommend `aw-spec` if the gap is truly product-defining
+
+After changes, return through the parent skill's Phase 5: run applicable design review, then actual document review through the effective review provider with the plan path, before human sign-off, tickets, or implementation. Do not substitute a bare mode token for the path or stamp a gate without review.

@@ -66,7 +66,7 @@ The consequence lands precisely on the north star: repeat-correction rate is com
 Metrics are organised in four tiers. Tiers 1–3 are diagnostics; tier 4 carries the success claim.
 
 **Tier 1 — Adoption** *(necessary, not sufficient)*
-Installed repos; **version currency** (share on the latest `aw-version.txt` — an un-upgraded install is an inert one); **skill breadth** per repo per month; workflow entry-point distribution. A repo that only ever calls `aw-commit` has installed AW without running it.
+Installed repos; **version currency** (share on the latest `aw-version.txt` — an un-upgraded install is an inert one); **skill breadth** per repo per month; workflow entry-point distribution. A repo that only ever uses `aw-ship local-commit` has installed AW without running it.
 
 **Tier 2 — Workflow integrity**
 Funnel drop-off across `brainstorm → create_spec → plan → work → review → check_workflow_compliance → commit_push_pr`; **triage calibration** (full-path PRs under ~20 changed lines indicate over-ceremony; PRs touching high-risk paths that took the trivial path indicate under-ceremony); **override rate** for `--no-receipt`, `Spec-Override:`, and `Pin-Override:`.

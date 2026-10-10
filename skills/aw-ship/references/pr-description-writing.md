@@ -4,7 +4,7 @@
 
 The diff is already visible on GitHub. The description exists to explain what the diff cannot show: what was impossible before and is now possible, what was broken and is now fixed, what shape changed. Cut any sentence a reader could reconstruct from the diff itself.
 
-- Bad: "Adds `evidence-decider.ts`, modifies `aw-commit-push-pr/SKILL.md` to call it, and updates two test files."
+- Bad: "Adds `evidence-decider.ts`, modifies `aw-ship/SKILL.md` to call it, and updates two test files."
 - Good: "Evidence capture now decides automatically whether a change has observable behavior. CLI tools and libraries are now eligible alongside web UIs."
 
 If the lead sentence describes what was moved, renamed, or added rather than what's now possible or fixed, rewrite it. This applies to every section, not just the opening — restating the diff is the failure mode this skill exists to prevent.
@@ -15,40 +15,70 @@ For user-facing bugs, run an extra before/after pass before writing the mechanis
 
 ## Step Pre-A: Resolve the range and base
 
-Two modes:
+Keep the caller's shipping mode throughout. In `description-only` and
+`description-update`, never run `git fetch`, checkout, tracking, tests, apps,
+evidence capture or any workflow that writes repository state. Use
+`GIT_OPTIONAL_LOCKS=0` for read-only git commands so status/index reads do not
+refresh the index. Use `git --no-pager diff --no-ext-diff --no-textconv` for
+local diffs so configured diff/textconv programs cannot run. Use existing evidence only. Missing refs or evidence are a
+blocker to a reliable description, not permission to mutate the checkout.
 
-- **Current-branch mode** (default) — describe HEAD vs the repo's default base.
-- **PR mode** — describe a specific PR. Triggered when the caller passes a PR ref.
+Before local history, diff or object reads in either description mode, inspect
+configuration with read-only `git config --get extensions.partialClone` and
+`git config --get-regexp '^remote\..*\.(promisor|partialclonefilter)$'`. A partial
+or promisor clone may lazily fetch missing objects even through `git diff`,
+`git log`, `git show` or `git cat-file`. If any partial/promisor configuration is
+present or clone completeness is uncertain, use the read-only GitHub API path
+only; do not run local history/diff/object reads. If that API cannot supply the
+range, report an evidence blocker and stop. Do not rely only on an environment
+flag that an older git may silently ignore. This prevents implicit lazy fetches
+as well as explicit fetches.
 
-For PR mode, fetch metadata first:
+Two input routes:
 
-```bash
-gh pr view <ref> --json baseRefName,headRefOid,url,body,state,isCrossRepository,headRepositoryOwner
+- **Current branch:** describe HEAD against the confirmed default/caller-supplied
+  base. Resolve base from `base:<ref>`, existing `origin/HEAD`, read-only repository
+  metadata, then already present `origin/main`, `origin/master`, or
+  `origin/develop` refs. Ask if none resolves. Use existing objects for `git log
+  <base>..HEAD` and `git diff <base>...HEAD`; disclose unverified remote freshness.
+  Uncommitted work is not silently included in a committed-branch description.
+- **Specific PR:** read exact PR metadata, diff and commits through the selected
+  GitHub MCP/API or gh path, including `baseRefName`, `baseRefOid`, `headRefOid`,
+  `url`, `body`, `title`, `state`, `isCrossRepository`, base repository and head
+  owner. A PR's actual base/head are authoritative, not the local checkout.
+  If state is not OPEN, report and stop. Preserve the original title/body for
+  comparison before any later approved update.
+
+CLI read equivalents:
+
+```sh
+gh pr view <ref> --json baseRefName,baseRefOid,headRefOid,url,body,title,state,isCrossRepository,headRepositoryOwner,commits
+gh pr diff <ref>
 ```
 
-If `state` is not `OPEN`, report and stop — do not invent a description. Use `baseRefName` as `<base>` and `headRefOid` as `<head>`.
+Read-only API diff/metadata/commits are the preferred PR route for description
+modes, including fork PRs or shallow clones. Already available local objects may
+be used only when they match the verified PR repository, base and head exactly.
+Do not diff against origin for a fork whose base belongs to another repository.
+If no safe read path supplies the required evidence, report the blocker and stop;
+never fall back to fetching merely to draft or update text.
 
-For current-branch mode, resolve `<base>` in priority order: caller-supplied (`base:<ref>`) → `git rev-parse --abbrev-ref origin/HEAD` (strip `origin/`) → `gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name'` → try `main`/`master`/`develop` via `git rev-parse --verify origin/<candidate>`. If none resolve, ask the user. `<head>` is `HEAD`.
+Only `full-pr` may refresh refs with git fetch. Match the PR base owner/repository
+to a real local remote; if none matches, use the read-only PR diff/commits path.
+For a matching base remote:
 
-**Base remote:** `origin` for current-branch mode and same-repo PRs. For fork PRs, match the PR's base owner/repo against `git remote -v`. If no local remote matches, skip to the `gh` fallback — do not diff against `origin` (wrong base).
-
-```bash
+```sh
 git fetch --no-tags <base-remote> <base>
-git fetch --no-tags <base-remote> <head>   # PR mode only: <head> is headRefOid and may not be local
-git log  --oneline "<base-remote>/<base>..<head>"
-git diff           "<base-remote>/<base>...<head>"
+git fetch --no-tags <base-remote> <head>   # PR mode: verified headRefOid
 ```
+
+If SHA fetching is unsupported but GitHub exposes pull refs, full-pr may fetch
+`refs/pull/<number>/head`; verify its OID against metadata before diffing. On
+unavailable refs, unrelated histories, or offline/shallow clones, use the
+selected API/gh read fallback and say that it was used. Never imply fresh local
+refs when fetch failed.
 
 If the commit list is empty, report "No commits to describe" and stop.
-
-**Fallback** — use `gh pr diff <ref>` and `gh pr view <ref> --json commits` when local git can't reach the refs (fork PR with no matching remote, shallow clone, offline, merge-base on unrelated histories). For GHES configurations that reject SHA fetch but allow `refs/pull/`:
-
-```bash
-git fetch --no-tags <base-remote> "refs/pull/<number>/head"
-PR_HEAD_SHA=$(awk '/refs\/pull\/[0-9]+\/head/ {print $1; exit}' "$(git rev-parse --git-dir)/FETCH_HEAD")
-```
-
-Note in the user-facing summary when the API fallback was used.
 
 ---
 

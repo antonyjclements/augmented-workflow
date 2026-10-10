@@ -19,7 +19,7 @@ git log origin/<base>..HEAD --oneline
 ```
 
 - **Empty output:** set `BASE_REF=origin/<base>` and proceed to step 3.
-- **Non-empty output:** show the commit list and ask (per the "Asking the user" convention in `SKILL.md`):
+- **Non-empty output:** show the commit list and ask (per the question convention in `SKILL.md`):
 
   > "Local `<base>` has N unpushed commits not on `origin/<base>`. Carry them onto the new feature branch, or leave them on local `<base>`?"
 
@@ -34,15 +34,20 @@ git log origin/<base>..HEAD --oneline
 git checkout -b <branch-name> "$BASE_REF"
 ```
 
-If checkout fails because uncommitted changes would be overwritten, stash and retry:
+If checkout fails because uncommitted changes would be overwritten, explain the
+collision. Ask before stashing unrelated user work; never discard it. With consent
+to preserve the affected work in a stash, record its identity and retry:
 
 ```bash
-git stash push -u -m "aw-commit-push-pr: pre-branch <branch-name>"
+git stash push -u -m "aw-ship: pre-branch <branch-name>"
 git checkout -b <branch-name> "$BASE_REF"
 git stash pop
 ```
 
-If `git stash pop` reports conflicts, surface the conflict output and the stash ref to the user — do not auto-resolve.
+If `git stash pop` reports conflicts, surface the conflict output and the stash ref
+to the user; stop and do not auto-resolve. Preserve the stash until recovery is
+verified. Never reset the default branch, drop unrelated stashes, or force checkout
+over user changes. Recheck status after restoration before selecting commit files.
 
 ## Fetch failure fallback
 

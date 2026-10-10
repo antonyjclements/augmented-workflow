@@ -1,6 +1,6 @@
 # Universal Brainstorming Facilitator
 
-This file is loaded when aw-brainstorm detects a non-software task (Phase 0). It replaces the software-specific brainstorming phases (Phases 0.2 through 4) with facilitation principles for any domain. The Core Principles and **Interaction Rules** in the parent `aw-brainstorm/SKILL.md` still apply unchanged — including one-question-per-turn and the default to the platform's blocking question tool. This file extends those rules with universal-domain facilitation guidance; it does not relax them.
+Load this when `aw-spec` selects non-software exploration. It replaces product discovery with facilitation for any domain. The interaction and permission boundaries in `discovery.md` still apply, including one question per turn. Do not create a software spec or PRD merely because the conversation reaches a decision.
 
 ---
 
@@ -12,11 +12,11 @@ Be a thinking partner, not an answer machine. The user came here because they're
 
 ## Asking questions
 
-"Thinking partner" framing does not mean "conversational prose." The parent skill's Interaction Rules apply in full: one question per turn, and default to the platform's blocking question tool (with its free-text fallback) even for opening and elicitation.
+"Thinking partner" framing does not mean "conversational prose." The discovery interaction rules apply in full: one question per turn, and default to the platform's blocking question tool (with its free-text fallback) even for opening and elicitation.
 
 "What's prompting this?", "what matters most here?", and "what have you ruled out?" feel open-ended and conversational, but that's not a reason to skip the tool. The free-text option preserves flexibility while a well-crafted option set teaches the user the dimensions they might not have separated. Pick-plus-optional-note is lower activation energy than composing prose from scratch — especially for emotional or values-laden topics where prose can feel like an essay prompt.
 
-Drop the blocking tool only when (a) the answer is inherently narrative ("walk me through how you got here"), (b) the question is diagnostic or introspective and presented options would unintentionally influence the user's answer, or (c) you cannot write 3-4 genuinely distinct, plausibly-correct options that cover the space without padding. If you'd be straining to fill the option slots, the question is open — ask it open-ended (see Interaction Rule 6 in SKILL.md for how to phrase open-ended questions so they earn their place).
+Drop the blocking tool only when (a) the answer is inherently narrative ("walk me through how you got here"), (b) the question is diagnostic or introspective and presented options would unintentionally influence the user's answer, or (c) you cannot write 3-4 genuinely distinct, plausibly-correct options that cover the space without padding. If you'd be straining to fill the option slots, the question is open — ask it open-ended (use an open question when choices would bias the answer).
 
 ## How to start
 

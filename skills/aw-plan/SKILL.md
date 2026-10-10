@@ -1,12 +1,12 @@
 ---
 name: aw-plan
-description: "Create structured plans for multi-step tasks -- software features, research workflows, events, study plans, or any goal that benefits from breakdown. Also deepens existing plans with interactive sub-agent review. Use when the user says 'plan this', 'create a plan', 'how should we build', 'break this down', or when a living spec is ready for planning. Use 'deepen the plan' or 'deepening pass' for the deepening flow. For exploratory requests, prefer aw-brainstorm first."
+description: "Create structured plans for multi-step tasks -- software features, research workflows, events, study plans, or any goal that benefits from breakdown. Also deepens existing plans with interactive sub-agent review. Use when the user says 'plan this', 'create a plan', 'how should we build', 'break this down', or when a living spec is ready for planning. Use 'deepen the plan' or 'deepening pass' for the deepening flow. For exploration-only requests, prefer aw-spec; an explicit plan request stays here."
 argument-hint: "[optional: feature description, spec path, plan path to deepen, or any task to plan]"
 ---
 
 # Create Technical Plan
 
-Use the current runtime date for dated artifacts; if no current date is available, ask instead of hard-coding one. `aw-brainstorm` defines what; `aw-plan` defines how; `aw-work` executes. Direct invocation always produces or updates a plan. Do not implement code here.
+Use the current runtime date for dated artifacts; if no current date is available, ask instead of hard-coding one. `aw-spec` defines what; `aw-plan` defines how; `aw-work` executes. Direct invocation always produces or updates a plan. Do not implement code here.
 
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-plan` (silent no-op otherwise).
 
@@ -39,7 +39,7 @@ A ready plan has:
    - non-software -> follow `references/universal-planning.md`
    - ambiguous -> ask
 4. Search `docs/features/*/spec.md` for relevant living specs. If multiple match, ask which. If one matches, treat it as primary source and carry forward users, flows, acceptance criteria, boundaries, decisions, dependencies, and open questions. If no spec matches, search recent `docs/brainstorms/` and `docs/product/prds/` artifacts only as secondary origins.
-5. If no origin doc or input is thin, bootstrap briefly: problem, intended behavior, non-goals, success criteria, blockers. Suggest `aw-brainstorm` for product ambiguity, `aw-debug` for reachable bugs, and `aw-work` for obvious ready-to-execute fixes; the user decides.
+5. If no origin doc or input is thin, bootstrap briefly: problem, intended behavior, non-goals, success criteria, blockers. Suggest `aw-spec` for product ambiguity, `aw-debug` for reachable bugs, and `aw-work` for obvious ready-to-execute fixes; the user decides.
 6. Resolve true blockers before planning. Technical blockers can become plan research; product/scope blockers need user decision or explicit assumptions.
 7. Choose depth: lightweight, standard, or deep.
 8. For solo standard/deep plans, emit a concise scope confirmation before research. Lightweight with no material forks may auto-proceed with a one-line scope statement. Do not mention implementation units or file paths in this pre-research scope claim.
@@ -73,7 +73,13 @@ Do not continue with hidden assumptions when a product decision would change the
 
 ## Phase 3: Structure
 
-Create software plans at `docs/features/<feature>/plan.md`. Keep paths repo-relative. If no feature exists yet, create or identify the feature spec first.
+Create software plans at `docs/features/<feature>/plan.md`. Keep paths repo-relative.
+Identify the existing feature/spec first. Do not create a spec solely as a side
+effect of an explicit plan request. If missing durable product intent prevents a
+sound plan, ask for authorization to establish it or report the unresolved blocker;
+do not invent accepted intent. When authorized, use the effective `create_spec`
+stage through the `aw-spec` contract, not a second writer inside planning. Then
+resume this plan from the returned spec path.
 
 Implementation units should be independently reviewable and ordered by dependency. Each unit includes:
 
@@ -138,9 +144,19 @@ Before writing, check:
 
 After writing, if `workflow.design.enabled` is true and `workflow.design.hooks.plan_review.skill` is non-empty, invoke that design hook with the plan path before ticket creation or implementation.
 
+Then perform actual plan document review before human sign-off, ticket creation,
+or implementation: resolve `workflow.steps.review.skill`; use its configured
+provider, or invoke `aw-review <plan path>` when blank. Pass the actual written
+plan path, origin spec/request, and applicable standards. The file target selects
+Document Review in `aw-review`; a bare `plan` or document mode token is not a path
+and is insufficient. Reconcile findings within the existing review permissions,
+record unresolved blockers, and report an unavailable/unsupported provider rather
+than bypassing it. Never stamp a review gate without actually performing review;
+a plan file or design-hook result alone is not document-review evidence.
+
 Offer engineering/human review for the plan only when `human_review.plan.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise continue without asking. If review is wanted, invoke `aw-request-human-review plan <plan path>`.
 
-Then summarize the plan file path, depth, major decisions, unresolved assumptions, whether human review was requested, and recommended next step (`aw-create-tickets <plan path>`, `aw-work <plan path>`, `aw-brainstorm`, or manual review).
+Then summarize the plan file path, depth, major decisions, unresolved assumptions, whether human review was requested, and recommended next step (`aw-create-tickets <plan path>`, `aw-work <plan path>`, `aw-spec`, or manual review).
 
 ## Deepening
 
@@ -154,4 +170,4 @@ For a complete active software plan, run a confidence check:
 - mismatch with repo patterns
 - mismatch with applicable standards
 
-Present findings with recommendations. In interactive mode, ask which to integrate; in headless/programmatic contexts, apply only unambiguous clarifications and report the rest.
+Present findings with recommendations. In interactive mode, ask which to integrate; in headless/programmatic contexts, apply only unambiguous clarifications and report the rest. After updating a plan, return through Phase 5 with the actual path before handoff; a deepening pass is not a substitute for document review.
