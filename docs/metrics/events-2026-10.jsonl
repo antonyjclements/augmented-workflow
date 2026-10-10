@@ -9,3 +9,6 @@
 {"ts":"2026-10-10T15:18:02.943Z","event":"review","detail":"code-and-spec-review","source":"aw-gate"}
 {"ts":"2026-10-10T15:18:03.454Z","event":"check_workflow_compliance","detail":"bootstrap-pending-push","source":"aw-gate"}
 {"ts":"2026-10-10T15:30:43.501Z","event":"check_workflow_compliance","detail":"post-push-review","source":"aw-gate"}
+{"ts":"2026-10-10T22:13:29.097Z","event":"review","detail":"Installer and local-first compliance safety review","source":"aw-gate"}
+{"ts":"2026-10-10T22:17:19.577Z","event":"synthesize","detail":null,"source":"aw-gate"}
+{"ts":"2026-10-10T22:19:37.299Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}
