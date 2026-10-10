@@ -4,3 +4,10 @@
 {"ts":"2026-10-09T20:57:01.842Z","session_id":"cb60dc14-0a01-4b4b-8715-024415a5d9e7","skill":"aw-commit","source":"skill","workflow_step":"commit"}
 {"ts":"2026-10-09T20:57:44.034Z","session_id":"cb60dc14-0a01-4b4b-8715-024415a5d9e7","skill":"aw-synthesize-memory","source":"skill"}
 {"ts":"2026-10-10T00:53:04.544Z","session_id":"cb60dc14-0a01-4b4b-8715-024415a5d9e7","skill":"aw-commit","source":"skill","workflow_step":"commit"}
+{"ts":"2026-10-10T15:15:53.502Z","session_id":"e28475c5-8c85-422d-b6ef-eb0a413a42fb","skill":"aw-ship","source":"skill","schema_version":2,"event":"invocation","mode":"full-pr","invocation_id":"publish-aw-consolidation-20261010","workflow_step":"commit_push_pr"}
+{"ts":"2026-10-10T15:15:53.598Z","session_id":"e28475c5-8c85-422d-b6ef-eb0a413a42fb","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"publish-aw-consolidation-20261010","workflow_step":"commit_push_pr"}
+{"ts":"2026-10-10T15:15:53.707Z","session_id":"e28475c5-8c85-422d-b6ef-eb0a413a42fb","skill":"aw-review","source":"skill","workflow_step":"review"}
+{"ts":"2026-10-10T15:15:53.792Z","session_id":"e28475c5-8c85-422d-b6ef-eb0a413a42fb","skill":"aw-synthesize-memory","source":"skill"}
+{"ts":"2026-10-10T15:17:30.504Z","session_id":"e28475c5-8c85-422d-b6ef-eb0a413a42fb","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"publish-aw-consolidation-20261010","workflow_step":"commit"}
+{"ts":"2026-10-10T15:18:03.210Z","session_id":"e28475c5-8c85-422d-b6ef-eb0a413a42fb","skill":"aw-check-workflow-compliance","source":"skill","workflow_step":"check_workflow_compliance"}
+{"ts":"2026-10-10T15:18:03.729Z","session_id":"e28475c5-8c85-422d-b6ef-eb0a413a42fb","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"publish-aw-consolidation-20261010","workflow_step":"commit"}
