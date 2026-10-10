@@ -97,7 +97,7 @@ The workflow routes:
 - README maintenance as a required check when user-facing workflow behavior changes
 - curated bundled skills that exclude deprecated or unrelated entrypoints
 - plan document review through `aw-review plan` before human review, ticket creation, or implementation
-- workflow compliance review through `aw-check-workflow-compliance` after branch push and before PR creation when implementation, configured step routing, or test policy compliance needs verification
+- workflow compliance review through `aw-check-workflow-compliance` on scoped local changes before push and PR creation when implementation, configured step routing, or test policy compliance needs verification
 - compounding knowledge through `aw-capture solution` and `aw-refresh solutions`
 - decision-log maintenance through `aw-refresh decisions`
 - cross-session memory through `aw-capture session` and `aw-synthesize-memory`
@@ -150,7 +150,7 @@ The workflow routes:
 ### Review, Ship, and Monitor
 
 - `aw-review` routes by target: a code diff gets code review, a spec gets drift review, a doc or plan gets document review, and `simplify` runs a simplification pass. Before PR, spec drift review checks changed behavior against living specs; before push/PR, non-trivial changes receive code review.
-- `aw-check-workflow-compliance` checks whether completed work followed configured workflow routing, implementation test policy, spec acceptance criteria coverage, README update expectations, review gates, pushed-branch evidence, and PR-body readiness after branch push and before PR creation. It reports pass/fail findings with enough detail to fix local issues or surface justified exceptions; it does not replace CI, code review, or spec review.
+- `aw-check-workflow-compliance` checks whether completed work followed configured workflow routing, implementation test policy, spec acceptance criteria coverage, README update expectations, review gates, and PR-body readiness on scoped local committed/worktree changes before push and PR creation. A push, upstream branch, or remote access is not required; publication status is reported separately and never substitutes for local scope, test, or review evidence. It reports pass/fail findings with enough detail to fix local issues or surface justified exceptions; it does not replace CI, code review, or spec review.
 - Repos can configure `pull_request.template.title` and `pull_request.template.body` with markdown template file refs from GitHub URLs, raw GitHub URLs, `file://` URLs, absolute paths, or repo-relative paths. Blank values use the default generated title/body.
 - Repos can configure `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` for enterprise-specific commit or shipping steps. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
 - There is no bundled pipeline monitor skill. After PR creation, `workflow.steps.monitor_pipeline.skill` is invoked with the PR URL when configured; when it is blank or `post_pr.ci_monitor.provider` is `manual` or missing, post-PR monitoring is skipped cleanly. Retry limits and polling cadence are owned by the configured monitor skill.
@@ -299,8 +299,13 @@ commits, push, new PR, publication gates or CI monitoring. Declines stop applica
 
 ### AWSHIP-003 — Full workflow sequencing and existing PR handling
 
-Retain review, capture, spec/README/design checks, branch/commit safety, push,
-compliance, late metric flush and configured CI sequence. Preserve unrelated work;
+Retain review, capture, spec/README/design checks, branch/commit safety, local
+compliance before push, late metric flush and configured CI sequence. Re-audit
+changed substantive scoped content before subsequent pushes. Inspect expected
+append-only workflow metrics through a bounded closure without recursively
+invoking tracked audits; final configured gate failures still block. Never stamp
+a gate without the actual check. A failed push blocks publication without invalidating a supported
+local compliance verdict. Preserve unrelated work;
 never push the default branch directly. Existing descriptions require rewrite
 confirmation; unavailable GitHub access is reported, never fabricated.
 

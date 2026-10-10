@@ -55,7 +55,7 @@ plan/spec. Preserve existing current evidence and disclose stale/missing evidenc
 PR title conventions follow project instructions, then recent history, then
 conventional commits. Shared commit mechanics resolve commit conventions/config.
 
-## 3. Commit and push
+## 3. Commit locally
 
 Run `references/commit-workflow.md` for the requested changes. It resolves the
 independent `workflow.steps.commit.skill`, protects staged user work, and returns
@@ -70,6 +70,47 @@ mechanics for any additional metrics commit; suppress duplicate public events an
 keep the invocation token. Record a stage event only when another commit stage
 actually executes.
 
+## 4. Compliance before push
+
+Before the first push and before composing/applying a new PR for non-trivial
+changes, invoke `workflow.steps.check_workflow_compliance.skill` when configured,
+otherwise `aw-check-workflow-compliance`. Supply the intended local base, committed
+range and any scoped worktree changes. Run for changed behavior, workflow,
+config, setup, acceptance criteria or review-gate expectations. Skip only trivial
+docs-only/mechanical changes and state the skip explicitly. The audit does not
+require publication or an upstream. Keep its verdict separate from push status.
+
+Fix locally actionable findings within scope; repeat required checks, commit the
+resulting in-scope changes and rerun compliance on that final scope before push.
+Unresolved blocking findings stop publication. Never stamp evidence without
+actual execution; a pre-push gate failure is not permission to invent a receipt
+or bypass the gate. Ensure PR-body inputs are ready; composition follows below.
+
+### Push and metrics closure
+
+Before every push, ensure required checks and genuine review/compliance evidence
+cover the final scope and run the configured deterministic gates. If later steps
+change audited content, rerun affected checks and compliance before publishing
+those changes, except for the bounded workflow-exhaust closure below. Handle any
+separately configured freshness gates honestly; this sequence does not waive them.
+
+**Bounded workflow-exhaust closure:** inspect the final delta since the actual
+audit, including staged/untracked files and metrics emitted by the audit itself.
+If the only additions are append-only, expected tracking/telemetry records under
+`docs/metrics/**` from the current authorized workflow (including newly created
+metric files), inspect their contents and preserve the prior substantive audit
+verdict. Report closure evidence: the audit's scope/HEAD, inspected metric paths
+and delta, and resulting closure commit. Do not invoke another tracked compliance
+audit solely because this expected exhaust was appended. This inspection emits no
+tracking, telemetry, receipt or gate stamp of its own; do not restamp a gate to
+make it fresh. Include the metrics commit's own expected stage event before the
+final inspection/staging, so closure does not generate another unhandled delta.
+If substantive or suspicious changes appear, stop closure and rerun affected
+checks and a real compliance audit after resolving them within authorization.
+Configured gates still run on the final commit; gate failures block publication.
+If a custom provider keeps producing new output after staging, report the blocker
+rather than looping audits or bypassing its gate.
+
 Push the confirmed feature branch to the verified intended remote:
 
 ```sh
@@ -78,18 +119,9 @@ git push -u origin HEAD
 
 If clean and already pushed, this is a no-op. Verify the remote branch contains
 the expected HEAD before claiming success. External credential/network/policy
-failures are blockers; do not claim a PR or compliance passed after a failed push.
+failures block publication; a failed push does not undo a supported local
+compliance verdict. Report both statuses, and do not claim a PR was created.
 Do not force-push, rewrite history, or use another identity to evade a denial.
-
-## 4. Compliance and metrics closure
-
-After successful push and before composing/applying a new PR for non-trivial
-changes, invoke `workflow.steps.check_workflow_compliance.skill` when configured,
-otherwise `aw-check-workflow-compliance`. Run for changed behavior, workflow,
-config, setup, acceptance criteria or review-gate expectations. Skip only trivial
-docs-only/mechanical changes and state the skip explicitly. Fix locally actionable
-findings within scope; repeat required checks and commit/push resulting in-scope
-changes before proceeding. Never stamp evidence without actual execution.
 
 After the initial push and every subsequent local pre-PR workflow step, inspect:
 

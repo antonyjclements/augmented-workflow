@@ -1,4 +1,11 @@
 decisions:
+  - path: docs/decisions/2026-10-10-audit-local-workflow-before-push.md
+    title: Audit local workflow compliance before push
+    date: 2026-10-10
+    status: active
+    tags:
+      - workflow
+      - shipping
   - path: docs/decisions/2026-10-10-consolidate-shipping-entrypoints.md
     title: Consolidate shipping entrypoints with explicit mutation boundaries
     date: 2026-10-10
@@ -155,7 +162,7 @@ decisions:
   - path: docs/decisions/2026-06-07-add-workflow-compliance-check.md
     title: Add workflow compliance check
     date: 2026-06-07
-    status: active
+    status: superseded
     tags:
       - workflow
       - review

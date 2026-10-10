@@ -704,7 +704,7 @@ pull_request:
 
 Useful template placeholders include `{default_title}`, `{default_body}`, `{summary}`, `{what_changed}`, `{validation}`, `{risks}`, `{ticket}`, `{spec}`, `{decisions}`, and `{badge}`.
 
-For non-trivial changes, `aw-ship full-pr` runs the configured compliance check after pushing the branch and before creating the PR. If `workflow.steps.check_workflow_compliance.skill` is blank, it uses `aw-check-workflow-compliance`.
+For non-trivial changes, `aw-ship full-pr` runs the configured compliance check on scoped local changes before pushing the branch and creating the PR. A push, upstream, or remote connection is not required for the audit; publication status is reported separately. Required local test and review evidence still applies. If `workflow.steps.check_workflow_compliance.skill` is blank, it uses `aw-check-workflow-compliance`.
 
 If post-PR monitoring is configured, the PR creation flow should invoke the configured monitor step after creating or updating the PR.
 
@@ -848,7 +848,7 @@ Use aw-capture decision for any choices we make during build.
 Use aw-review before opening the PR (spec drift + code review in one step).
 Run the capture checkpoint.
 Update README.md if setup, commands, config, or workflow behavior changed.
-Use aw-ship full-pr to commit, push, run workflow compliance, and create the PR.
+Use aw-ship full-pr to commit locally, run workflow compliance, push, and create the PR.
 If `workflow.steps.monitor_pipeline.skill` is configured, invoke it with the PR URL to watch CI and fix failures until green.
 ```
 
@@ -960,7 +960,7 @@ usage summary; `skills/*/SKILL.md` is authoritative.
 - `aw-create-tickets`: turn plans into configured Linear/Jira/custom implementation tickets
 - `aw-work`: implement plans, tickets, specs, or concrete requests
 - `aw-debug`: investigate and fix bugs systematically
-- `aw-check-workflow-compliance`: check workflow routing, test policy, acceptance coverage, README expectations, and review gates after push and before PR creation
+- `aw-check-workflow-compliance`: check workflow routing, test policy, acceptance coverage, README expectations, and review gates on local changes before push and PR creation
 - `aw-ship`: local commits, full PR workflow, read-only description drafts, or explicitly authorized existing-PR text updates; each mode preserves its own permission boundary
 - `aw-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers
 - `aw-capture`: capture durable knowledge — routes by type: `decision` → immutable record in `docs/decisions/`; `learning` → correction-driven learning in `docs/learnings/`; `solution` → reusable solved-problem doc in `docs/solutions/`; `session` → structured session log in `docs/sessions/` feeding the memory synthesis loop
