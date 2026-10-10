@@ -1,6 +1,6 @@
 ---
 name: aw-check-workflow-compliance
-description: "Check whether completed work followed Augmented Workflow config, implementation test policy, acceptance coverage, README expectations, and review gates. Use after branch push and before PR creation for non-trivial changes."
+description: "Check whether completed work followed Augmented Workflow config, implementation test policy, acceptance coverage, README expectations, and review gates. Use on local changes before push and PR creation for non-trivial changes."
 argument-hint: "[optional: plan/spec/ticket path or branch ref]"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "[optional: plan/spec/ticket path or branch ref]"
 
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-check-workflow-compliance` (silent no-op otherwise).
 
-Review workflow-policy evidence after a branch has been pushed and before PR creation. This is an accountability check, not a security sandbox, and it does not replace CI or `aw-review`.
+Review workflow-policy evidence for scoped local changes before publication. This audit does not require a push, upstream branch, or remote access. This is an accountability check, not a security sandbox, and it does not replace CI or `aw-review`.
 
 ## Inputs
 
@@ -19,7 +19,14 @@ Review workflow-policy evidence after a branch has been pushed and before PR cre
 - ticket/story identifier or URL
 - branch/ref
 
-If no diff scope can be determined, report insufficient scope instead of inventing compliance.
+Resolve and report the audit scope: local base ref/SHA, HEAD, committed range, and
+included staged, unstaged, and untracked changes. Compare the intended base to
+HEAD for committed changes, then inspect scoped working-tree changes separately;
+do not mistake a clean worktree for an empty branch diff. Exclude unrelated user
+work explicitly. An upstream is optional: use an explicit local base or verified
+local default-branch ref when appropriate. If no diff scope can be determined,
+report insufficient scope instead of inventing compliance. Do not fetch or push
+just to make the audit runnable.
 
 ## Configuration
 
@@ -36,7 +43,7 @@ Read `docs/workflow/config.yml` first.
 ## Evidence To Gather
 
 1. `AGENTS.md` and `docs/workflow/config.yml`.
-2. Current branch, push/upstream status, changed files, and diff.
+2. Current branch, local audit scope, changed files, and diff. Report publication status separately using available push/upstream evidence; a tracking ref alone does not prove the current HEAD is published.
 3. Relevant plan/spec/ticket artifacts when supplied or discoverable.
 4. `docs/features/index.yml` and affected `docs/features/*/spec.md` files.
 5. Applicable `docs/standards/index.yml` entries when present.
@@ -58,7 +65,6 @@ Report findings when:
 - `e2e.enabled` is true, the diff touches `e2e.trigger_paths`, and the change carries neither e2e coverage nor a stated exception.
 - Workflow/setup/configuration behavior changed but `README.md` was not updated or consciously skipped.
 - Required spec/code review gates are missing for non-trivial behavior or workflow changes.
-- The branch has not been pushed when this skill is invoked as part of the shipping flow.
 - PR body inputs are not ready to include policy, tests/checks, acceptance coverage, decisions, and residual risks.
 
 Severity guidance:
@@ -94,7 +100,10 @@ Always include:
 - e2e coverage status when `e2e.enabled` is true, otherwise omit it
 - README status
 - review gate status
-- pushed branch evidence or blocker
+- audited base/HEAD and included committed/worktree scope
+- publication status, separate from the compliance verdict: verified pushed HEAD,
+  not pushed, or unknown/unavailable (state the evidence and its limits). No
+  upstream or unavailable remote evidence is not itself a compliance finding.
 
 ## Fixture-Style Dry Run
 
@@ -104,17 +113,23 @@ Use this scenario when validating the skill instructions:
 - Config contains `workflow.steps.work.skill: ""` and no legacy skill-selector fields.
 - Source spec has two acceptance criteria.
 - Diff adds or updates tests that map to both acceptance criteria.
-- Branch evidence shows an upstream branch or a simulated pushed branch ref.
+- Local branch has no upstream and has not been pushed; an explicit local base makes the committed and worktree diff scope verifiable.
 - Diff changes `docs/workflow/config.yml`.
 - README is missing the corresponding workflow config update.
 
 Expected result:
 
 - No missing-test finding.
-- No missing-push finding.
+- No missing-push finding; publication status is reported as not pushed, independently of the README finding.
 - One README finding explaining that workflow configuration changed without user-facing docs.
 - Effective test policy reported as `acceptance-first`.
 - Acceptance coverage reported as covered by tests.
+
+Also dry-run the same complete local evidence without the README gap: expect a
+compliance pass with publication still not pushed. Repeat with unavailable remote
+access: expect the same verdict and publication unknown/unavailable. Removing test
+or required review evidence must still produce a finding; removing a verifiable
+local base/scope must report insufficient scope, not a pass.
 
 ## Freshness Gate
 
@@ -123,11 +138,11 @@ Only after the compliance review completes (reporting, not fixing), if `.scripts
 1. Write the receipt from your report: `node .scripts/aw-gate.js receipt check_workflow_compliance --summary "<one line: compliance verdict and any gaps found>"`.
 2. Record: `node .scripts/aw-gate.js record check_workflow_compliance`.
 
-When `gates.require_receipt` is on, `record` refuses to stamp without the fresh receipt from step 1 and consumes it (single-use). Never stamp the gate without running this check — `--no-receipt` exists only for bootstrap. This writes only the git-ignored gate state (and an optional telemetry event); it is not a file mutation of tracked work. A deterministic pre-push/CI `aw-gate.js check` then enforces that compliance ran recently. See `docs/workflow/README.md`.
+When `gates.require_receipt` is on, `record` refuses to stamp without the fresh receipt from step 1 and consumes it (single-use). Never stamp the gate without running this check — `--no-receipt` exists only for bootstrap. The gate state is git-ignored, but enabled telemetry can append tracked `docs/metrics/**` files; the initial tracking command can also write workflow exhaust. Report this generated tracking/telemetry exhaust accurately and leave its publication to the authorized shipping workflow's bounded closure. A deterministic pre-push/CI `aw-gate.js check` then enforces that compliance ran recently. See `docs/workflow/README.md`.
 
 ## Rules
 
 - Do not mutate files unless the user explicitly asks for fixes.
-- Do not claim compliance if push, test, or review evidence is unavailable.
+- Do not claim compliance when local scope is insufficient or required test or review evidence is missing. Missing publication evidence does not invalidate an otherwise supported local compliance verdict.
 - Do not hide external blockers such as credentials, network, remote policy, or unavailable tools.
 - Keep findings actionable and scoped to workflow compliance.

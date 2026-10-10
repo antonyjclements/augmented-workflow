@@ -5,7 +5,7 @@ created: 2026-07-27
 trigger: correction
 status: tentative
 evidence-count: 1
-unconfirmed-runs: 0
+unconfirmed-runs: 1
 derived-from:
   - 2026-07-27-augmented-workflow-evaluation-fixes
 tags:

@@ -95,10 +95,10 @@ test('one shared commit procedure protects branch and unrelated work', () => {
     /do not auto.resolve/i, /base freshness was not verified/i]);
 });
 
-test('full workflow retains ordered preparation, push, compliance, PR and CI', () => {
+test('full workflow audits local commits before push, PR and CI', () => {
   const flow = reference('full-pr-workflow');
-  const headings = ['## 1. Resolve', '## 2. Prepare', '## 3. Commit and push',
-    '## 4. Compliance', '## 5. Compose and apply', '## 6. Post-PR'];
+  const headings = ['## 1. Resolve', '## 2. Prepare', '## 3. Commit locally',
+    '## 4. Compliance before push', '### Push and metrics closure', '## 5. Compose and apply', '## 6. Post-PR'];
   let previous = -1;
   for (const heading of headings) {
     const current = flow.indexOf(heading);
@@ -114,6 +114,32 @@ test('full workflow retains ordered preparation, push, compliance, PR and CI', (
     /after.*description/i, /do not create.*unpushed/i,
     /workflow\.steps\.monitor_pipeline\.skill/, /post_pr\.ci_monitor\.provider/,
     /failures.*current branch/i]);
+});
+
+test('compliance audits local scope independently of publication status', () => {
+  const audit = read('skills/aw-check-workflow-compliance/SKILL.md');
+  includes(audit, [/does not require.*(?:push|remote)/i,
+    /committed.*staged.*unstaged.*untracked/i,
+    /base.*HEAD/i, /unrelated.*(?:exclude|outside)|exclude.*unrelated/i,
+    /publication status.*separate/i, /unavailable.*(?:remote|publication)|(?:remote|publication).*unavailable/i,
+    /missing.*(?:test|review).*evidence/i, /never stamp.*without running/i]);
+  assert(!/branch has not been pushed when/.test(audit));
+  assert(!/Do not claim compliance if push/.test(audit));
+  includes(reference('full-pr-workflow'), [/rerun.*compliance/i,
+    /before.*(?:each|every).*push/i, /failed push.*(?:does not|doesn't).*compliance/i]);
+  assert.strictEqual(read('docs/workflow/README.md'), read('skills/aw-init/artifacts/workflow-readme.md'));
+});
+
+test('expected metrics exhaust has a bounded closure without recursive audits', () => {
+  includes(reference('full-pr-workflow'), [/append-only.*expected.*(?:tracking|telemetry)/i,
+    /(?:do not|without).*invoke.*tracked.*audit/i,
+    /preserve.*substantive.*verdict/i, /closure evidence/i,
+    /(?:substantive|suspicious).*rerun.*(?:checks|audit)/i,
+    /(?:gate|gates).*fail.*block/i, /(?:do not|never).*restamp/i]);
+  const audit = read('skills/aw-check-workflow-compliance/SKILL.md');
+  includes(audit, [/telemetry.*(?:append|write).*tracked.*metrics/i,
+    /report.*(?:generated|tracking|telemetry).*exhaust/i]);
+  assert(!/not a file mutation of tracked work/.test(audit));
 });
 
 test('existing PR rewrite needs explicit preview and target validation', () => {

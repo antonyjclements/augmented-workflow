@@ -97,7 +97,7 @@ The workflow routes:
 - README maintenance as a required check when user-facing workflow behavior changes
 - curated bundled skills that exclude deprecated or unrelated entrypoints
 - plan document review through `aw-review plan` before human review, ticket creation, or implementation
-- workflow compliance review through `aw-check-workflow-compliance` after branch push and before PR creation when implementation, configured step routing, or test policy compliance needs verification
+- workflow compliance review through `aw-check-workflow-compliance` on scoped local changes before push and PR creation when implementation, configured step routing, or test policy compliance needs verification
 - compounding knowledge through `aw-capture solution` and `aw-refresh solutions`
 - decision-log maintenance through `aw-refresh decisions`
 - cross-session memory through `aw-capture session` and `aw-synthesize-memory`
@@ -150,7 +150,7 @@ The workflow routes:
 ### Review, Ship, and Monitor
 
 - `aw-review` routes by target: a code diff gets code review, a spec gets drift review, a doc or plan gets document review, and `simplify` runs a simplification pass. Before PR, spec drift review checks changed behavior against living specs; before push/PR, non-trivial changes receive code review.
-- `aw-check-workflow-compliance` checks whether completed work followed configured workflow routing, implementation test policy, spec acceptance criteria coverage, README update expectations, review gates, pushed-branch evidence, and PR-body readiness after branch push and before PR creation. It reports pass/fail findings with enough detail to fix local issues or surface justified exceptions; it does not replace CI, code review, or spec review.
+- `aw-check-workflow-compliance` checks whether completed work followed configured workflow routing, implementation test policy, spec acceptance criteria coverage, README update expectations, review gates, and PR-body readiness on scoped local committed/worktree changes before push and PR creation. A push, upstream branch, or remote access is not required; publication status is reported separately and never substitutes for local scope, test, or review evidence. It reports pass/fail findings with enough detail to fix local issues or surface justified exceptions; it does not replace CI, code review, or spec review.
 - Repos can configure `pull_request.template.title` and `pull_request.template.body` with markdown template file refs from GitHub URLs, raw GitHub URLs, `file://` URLs, absolute paths, or repo-relative paths. Blank values use the default generated title/body.
 - Repos can configure `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` for enterprise-specific commit or shipping steps. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
 - There is no bundled pipeline monitor skill. After PR creation, `workflow.steps.monitor_pipeline.skill` is invoked with the PR URL when configured; when it is blank or `post_pr.ci_monitor.provider` is `manual` or missing, post-PR monitoring is skipped cleanly. Retry limits and polling cadence are owned by the configured monitor skill.
@@ -219,6 +219,7 @@ The workflow routes:
 - New installs also copy `docs/workflow/README.md`, `docs/workflow/field-guide.md`, and `docs/standards/coding-approach.md`, and the field guide is the first next-step the installer recommends. `aw-help` provides an interactive skill recommendation when the user is unsure where they are in the workflow.
 - Existing installs upgrade through `skills/aw-init/scripts/upgrade.sh`, which dry-runs before applying. Applying migration backs up the prior `docs/workflow/config.yml`, writes the migrated config, and updates `.augmented-workflow-version`. Migration preserves unknown fields and non-skill settings, adds missing current defaults, removes migrated legacy skill selector fields, and stops for manual review when old and new routing values conflict.
 - Legacy selector fields (`ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, `research.slack.skill`), legacy step keys (`import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code`), and legacy auxiliary keys (`index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, `log_session`) map to their current equivalents; the mapping is documented in the installed `docs/workflow/README.md` under Legacy Fields, not in `AGENTS.md`.
+- When aw-cli is available, the installer previews with `aw upgrade --source <prepared-source> --repo <target-repo> --dry-run` before applying the same command without `--dry-run`, preserving the selected local or extracted remote source. The CLI upgrade does not invoke the installer recursively. A CLI that rejects the safe preview is never invoked for mutating upgrade. An incompatible CLI or upgrade failure stops the install without legacy `aw init` fallback; prior installer writes are not rolled back. Dry runs and `--skip-repo` do not invoke the CLI. Ruby is required for config migration.
 - Existing installs can refresh through a current, reviewed installer using `--remote` or a pinned `--source-url`. For the first consolidation migration, obtain the new installer separately: the already-running pre-consolidation installer retains unsafe legacy functions even when downloading new source. Never use that old bootstrap to perform this migration. The remote source must contain the repository archive layout. See the safe checkout recipe in `docs/workflow/README.md`.
 - Derived registries must either be validated or removed: `scripts/test-install.sh` validates every `docs/**/index.yml` (YAML parses, referenced paths exist, every feature spec is indexed) in this repository and in test-installed targets, and enforces the `AGENTS.md` word budget.
 - Before commit/PR, agents check whether `README.md` needs an update and make that update when setup, commands, configuration, architecture, repo structure, or workflow behavior changed. The installed `docs/workflow/README.md` documents the config schema beside `docs/workflow/config.yml`.
@@ -298,8 +299,13 @@ commits, push, new PR, publication gates or CI monitoring. Declines stop applica
 
 ### AWSHIP-003 — Full workflow sequencing and existing PR handling
 
-Retain review, capture, spec/README/design checks, branch/commit safety, push,
-compliance, late metric flush and configured CI sequence. Preserve unrelated work;
+Retain review, capture, spec/README/design checks, branch/commit safety, local
+compliance before push, late metric flush and configured CI sequence. Re-audit
+changed substantive scoped content before subsequent pushes. Inspect expected
+append-only workflow metrics through a bounded closure without recursively
+invoking tracked audits; final configured gate failures still block. Never stamp
+a gate without the actual check. A failed push blocks publication without invalidating a supported
+local compliance verdict. Preserve unrelated work;
 never push the default branch directly. Existing descriptions require rewrite
 confirmation; unavailable GitHub access is reported, never fabricated.
 

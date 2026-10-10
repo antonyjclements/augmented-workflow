@@ -567,8 +567,12 @@ specific existing PR text replacement; it does not commit, push, create a PR,
 run publication gates, or start CI monitoring. Declining the replacement ends it.
 
 `full-pr` preserves review/spec/README/capture/design checks, local commits,
-push, workflow compliance, late metrics flush, PR application, and configured
-post-PR monitoring. Existing PR descriptions are not rewritten merely because
+workflow compliance before push, late metrics flush, PR application, and configured
+post-PR monitoring. Compliance audits the scoped local committed/worktree diff
+without requiring a push, upstream, or remote access; report publication status
+separately. Recheck changed substantive audited content before subsequent pushes.
+Inspect expected append-only workflow metrics as a bounded closure without
+recursively invoking tracked audits; final configured gate failures still block. Existing PR descriptions are not rewritten merely because
 new commits were pushed; retain the existing explicit rewrite confirmation.
 New PRs require actual authorization; no mode grants merge/deploy permission.
 Human spec/plan sign-off stays with `aw-request-human-review`.
