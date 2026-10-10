@@ -40,7 +40,7 @@ approved removal of an exact progress file.
                                    to recur
    aw-capture decision          ← if the fix resolved ambiguous intended
                                    behavior (not just a clear defect)
-4. aw-commit-push-pr
+4. aw-ship full-pr
 ```
 
 ### Small feature or config change (< 1 day, clear scope)
@@ -51,26 +51,26 @@ approved removal of an exact progress file.
                                    changes and internal-only fixes
 2. aw-work
 3. aw-capture decision          ← if you resolved a real tradeoff
-4. aw-commit-push-pr
+4. aw-ship full-pr
 ```
 
 ### New feature with unclear scope or product questions
 
 ```
 1. aw-prd                       ← if a PRD exists or product wants one
-2. aw-brainstorm                ← resolves scope, outputs spec
+2. aw-spec                ← resolves scope, outputs spec
 3. aw-plan                      ← skip for simple features
 4. aw-work
 5. aw-review
 6. aw-capture decision/learning
-7. aw-commit-push-pr
+7. aw-ship full-pr
 ```
 
 ### Large or risky feature (auth, payments, migrations, API contracts)
 
 ```
 1. aw-prd                       ← get product intent documented
-2. aw-brainstorm                ← resolve ambiguity, output spec
+2. aw-spec                ← resolve ambiguity, output spec
 3. aw-plan
 4. aw-request-human-review      ← spec review before building
 5. aw-create-tickets            ← break into tickets if multiple people
@@ -78,7 +78,7 @@ approved removal of an exact progress file.
 7. aw-review
 8. aw-check-workflow-compliance
 9. aw-capture decision/learning/solution
-10. aw-commit-push-pr
+10. aw-ship full-pr
 ```
 
 ### Refactor or simplification
@@ -87,7 +87,7 @@ approved removal of an exact progress file.
 1. aw-review simplify           ← finds AND applies behavior-preserving
                                    simplifications, verifying as it goes
 2. aw-review                    ← optional second pass for large refactors
-3. aw-commit-push-pr
+3. aw-ship full-pr
 ```
 
 For refactors that change behavior or need structural work beyond simplification, use the feature path (spec if intent changes → `aw-work` → `aw-review`) instead.
@@ -108,7 +108,7 @@ aw-review <PR link or spec path>
 
 - `aw-capture decision` — whenever you resolve a real tradeoff
 - `docs/standards/` — when the same convention comes up twice, write it down with `aw-discover-standards`
-- `aw-commit-push-pr` — for everything you ship
+- `aw-ship full-pr` — for everything you ship
 
 Everything else is optional. Add specs when features get complex enough that you'd otherwise lose track of intent. Add `aw-capture session` at the end of long sessions if you want continuity.
 
@@ -120,19 +120,19 @@ Everything else is optional. Add specs when features get complex enough that you
 
 Add to the above:
 
-- `aw-brainstorm` before anything with product ambiguity — a 10-minute scope alignment now saves a week of rework later
-- When the intended human experience is uncertain, `aw-brainstorm` interprets the
+- `aw-spec` before anything with product ambiguity — a 10-minute scope alignment now saves a week of rework later
+- When the intended human experience is uncertain, `aw-spec` interprets the
   goal and references, suggests a disposable prototype, and waits for agreement.
   Explicit prototype requests already authorize their scope. Human feedback
   informs the living spec; routine UI changes need no extra discovery loop.
-- `aw-create-spec` for features that touch multiple people's code
+- `aw-spec` for features that touch multiple people's code
 - `aw-capture learning` after postmortems or non-obvious bugs
 - `aw-synthesize-memory` monthly, to distill session logs into team learnings
 
 **The minimum viable workflow for a new feature:**
 
 ```
-aw-brainstorm → spec → aw-work → aw-review → aw-commit-push-pr
+aw-spec → spec → aw-work → aw-review → aw-ship full-pr
 ```
 
 Skip `aw-plan` unless the feature has real sequencing complexity or multiple contributors.
@@ -172,5 +172,5 @@ The full chain pays off here because context loss and cross-session continuity b
 - **Skip ceremony that produces artifacts nobody will read.** A plan doc nobody references is waste.
 - **Always capture decisions.** This is the highest-ROI habit at any team size and costs almost nothing.
 - **Add specs when intent starts drifting** between what was built and what was meant. Not before.
-- **`aw-brainstorm` before `aw-plan`.** Scope surprises in planning are cheap; scope surprises in implementation are expensive.
+- **`aw-spec` before `aw-plan`.** Scope surprises in planning are cheap; scope surprises in implementation are expensive.
 - **`aw-capture session` at natural pauses**, not just at the end of a project. The value is in continuity across sessions, not archiving completed work.

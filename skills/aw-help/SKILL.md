@@ -50,7 +50,7 @@ If `$ARGUMENTS` does not make the situation clear, ask one concise question to d
 
 Give a concrete recommendation:
 
-1. **The next skill to run** — name it explicitly (`aw-debug`, `aw-brainstorm`, `aw-work`, etc.).
+1. **The next skill to run** — name it explicitly (`aw-debug`, `aw-spec`, `aw-work`, etc.).
 2. **Why** — one sentence connecting the situation to the skill.
 3. **The exact prompt** — the literal text the user can paste or say to invoke it.
 4. **What comes after** — the one skill that follows this one, so the user can see the path ahead.
@@ -65,23 +65,33 @@ Format the recommendation clearly. Example:
 > Use aw-debug. The test auth_spec.rb:42 is failing after the session middleware change.
 > ```
 >
-> After the bug is fixed: `aw-capture learning` if the fix reveals a non-obvious pattern, then `aw-commit-push-pr`.
+> After the bug is fixed: `aw-capture learning` if the fix reveals a non-obvious pattern, then `aw-ship full-pr`.
 
 ## Routing Reference
 
+Choose requested output before ambiguity. A source PRD is not necessarily a
+request for a PRD artifact; an explicit spec request with clear input goes direct.
 Use this when determining which skill to recommend:
 
 | Situation | Recommended skill |
 | --- | --- |
 | Broken behavior, failing test, error | `aw-debug` |
-| External PRD, pasted content, file/link, or user wants a PRD artifact | `aw-prd` |
-| Raw or ambiguous idea, open scope, product questions | `aw-brainstorm` |
-| Clear requirements or existing behavior to document | `aw-create-spec` |
-| Spec exists, need a plan | `aw-plan` |
+| Create/import/save a PRD artifact, including an ambiguous PRD | `aw-prd` |
+| Explicit spec from an external PRD or clear requirements | `aw-spec` (direct; preserves/reuses source first) |
+| Raw or ambiguous idea, open scope, product questions | `aw-spec` (exploratory) |
+| Exploration-only, comparing options without commitment | `aw-spec` (exploratory; no automatic spec) |
+| Existing behavior or living intent to document/update | `aw-spec` (direct) |
+| Focused or report-only research | `aw-research` (evidence, no silent product-doc write) |
+| Typo or tiny mechanical fix | Direct lightweight edit; no compulsory spec or plan |
+| Explicit plan request, or spec exists and needs a plan | `aw-plan` |
 | Plan exists, need tickets | `aw-create-tickets` |
 | Ticket or concrete task ready | `aw-work` |
 | Need to review code before PR | `aw-review` |
-| Need to ship (commit + push + PR) | `aw-commit-push-pr` |
+| Local-only commit requested | `aw-ship local-commit` |
+| Need to ship (commit + push + PR) | `aw-ship full-pr` |
+| Draft/describe PR text only, or pasted PR ref | `aw-ship description-only` |
+| Rewrite an existing PR title/body only | `aw-ship description-update` (preview and confirm) |
+| Spec or plan needs human sign-off | `aw-request-human-review` (separate artifact PR) |
 | PR is open, reviewer left comments | `aw-resolve-pr-feedback` |
 | Made a decision that should be durable | `aw-capture decision` |
 | Agent made a mistake worth preventing | `aw-capture learning` |
@@ -107,7 +117,8 @@ If the user says yes, invoke the recommended skill directly. Pass any context fr
 ## Notes
 
 - If `docs/workflow/field-guide.md` exists, mention it as a reference for the full skill-by-task matrix: "See `docs/workflow/field-guide.md` for the complete task-type guide."
-- If the user's configured `docs/workflow/config.yml` overrides a default skill, use the configured skill name in the recommendation, not the default.
-- If `workflow.design.enabled` is true and the user's current position matches a configured non-empty design hook, recommend that design hook skill as the next step before continuing the normal workflow: `prd_review` after PRD intake, `discovery` after brainstorming, `spec_review` after spec creation, `plan_review` after planning, `ticket_review` after ticket drafting or creation, `implementation_review` after implementation, or `pre_pr` before PR creation.
+- If `docs/workflow/config.yml` overrides the selected stage, recommend that provider. For `aw-spec`, select `create_spec` for direct input or `brainstorm` for exploratory input; keep both overrides independent. A bundled `aw-spec` self-reference enters the stage without recursion. After discovery, resolve `create_spec` separately only if a spec is still needed.
+- For `aw-ship`, select mode before tracking or tools. Preserve `commit` and `commit_push_pr` overrides independently; description-only/update bypass workflow providers and all tracking. An implementation request does not authorize shipping.
+- If `workflow.design.enabled` is true and the user's current position matches a configured non-empty design hook without current evidence of execution, recommend that hook before continuing. An artifact alone is not evidence. Direct spec creation never invents a discovery stage. Checkpoints: `prd_review` after PRD intake, `discovery` after brainstorming, `spec_review` after spec creation, `plan_review` after planning, `ticket_review` after ticket drafting or creation, `implementation_review` after implementation, or `pre_pr` before PR creation.
 - If the user is using a team size that suggests lighter workflow (solo or pair), skip ceremony: do not recommend `aw-request-human-review`, `aw-create-tickets`, or full compliance checks unless the task warrants them.
 - Do not recommend multiple parallel skills. Give one clear next step.

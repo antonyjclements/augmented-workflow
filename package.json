@@ -6,12 +6,15 @@
   "scripts": {
     "prepare": "husky",
     "gate:check": "node .scripts/aw-gate.js check",
-    "gate:test": "node test/gate/receipt.test.js && node test/gate/suggest-e2e.test.js && node test/gate/e2e-coverage.test.js && node test/gate/learning-audit.test.js && node test/gate/derived-state.test.js",
+    "gate:test": "node test/gate/receipt.test.js && node test/gate/suggest-e2e.test.js && node test/gate/e2e-coverage.test.js && node test/gate/learning-audit.test.js && node test/gate/derived-state.test.js && node test/gate/skill-routing.test.js",
     "trace:suggest-e2e": "node .scripts/aw-gate.js trace --suggest-e2e",
     "trace:check": "node .scripts/aw-gate.js trace",
     "workflow:check": "node .scripts/aw-gate.js workflow-check",
     "pin:check": "node .scripts/aw-gate.js pin check",
-    "pin:run": "node .scripts/aw-gate.js pin run"
+    "pin:run": "node .scripts/aw-gate.js pin run",
+    "skills:test": "node test/skills/consolidation.spec.ts",
+    "installer:test": "python3 test/installer/skill-migration.test.py",
+    "shipping:test": "node test/skills/shipping-contract.test.js && node test/skills/shipping-readonly.test.js"
   },
   "devDependencies": {
     "husky": "^9.1.7"

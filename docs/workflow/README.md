@@ -235,7 +235,7 @@ context. An ignored local archive still has no Git backup.
 
 ### Skill tracking (`tracking`)
 
-When `tracking.enabled` is true, every skill emits `node .scripts/aw-gate.js track <skill>` at its first step, appending a JSONL line (`ts`, `session_id`, `skill`, optional `workflow_step`, `source: "skill"`) to `tracking.path` (`docs/metrics/skills.jsonl` by default, month-sharded → `skills-YYYY-MM.jsonl`). The workflow-step mapping is owned by `aw-gate.js`; per-repo `workflow.steps.<step>.skill` overrides win when present.
+When `tracking.enabled` is true, legacy single-stage skills emit `node .scripts/aw-gate.js track <skill>`, with the original inferred workflow step. Multi-stage `aw-spec` first verifies `tracking-schema` capability, then supplies explicit stage, mode, event kind and invocation ID. Public invocations and internal stages are separate rows; only invocation/legacy rows count toward public usage. Both schemas append locally to `tracking.path` (`docs/metrics/skills.jsonl` by default, month-sharded → `skills-YYYY-MM.jsonl`). See `tracking.md` for the normative schema and aggregation rules. New globally installed skills skip v2 tracking against older repo helpers rather than miscounting stages.
 
 The writer is deliberately fire-and-forget: silent when tracking is disabled, when the config file is missing, or when any internal error occurs — it never blocks the caller. Skills always emit through a guard so repos installed without `--with-gates` (no `.scripts/aw-gate.js`) also stay silent.
 
@@ -518,18 +518,73 @@ a tree that is already green.
 
 ```text
 prd -> aw-prd
-brainstorm -> aw-brainstorm
-create_spec -> aw-create-spec
+brainstorm -> aw-spec (exploratory stage)
+create_spec -> aw-spec (direct/shared-writer stage)
 request_human_review -> aw-request-human-review
 plan -> aw-plan
 review -> aw-review
 create_tickets -> aw-create-tickets
 work -> aw-work
 check_workflow_compliance -> aw-check-workflow-compliance
-commit -> aw-commit
-commit_push_pr -> aw-commit-push-pr
+commit -> aw-ship local-commit
+commit_push_pr -> aw-ship full-pr
 monitor_pipeline -> (no bundled skill; set workflow.steps.monitor_pipeline.skill)
 ```
+
+## Shared Spec Stages and Overrides
+
+`brainstorm` and `create_spec` remain separate replaceable stages. A direct
+`aw-spec` route resolves only `workflow.steps.create_spec.skill`. Exploration
+resolves `workflow.steps.brainstorm.skill` first, then the create-spec provider
+only when authorized durable intent is ready. Preserve different providers;
+never let one overwrite the other. Blank uses the bundled route. An explicit
+`aw-spec` self-reference selects its stage reference without recursive invocation.
+An unavailable or incompatible custom provider is a blocker, not permission to
+silently use the bundled writer.
+
+Providers return artifact paths, unresolved intent, the stage performed, and
+current evidence of applicable hooks actually run. Notes trigger the selected
+writer once; a valid returned spec skips duplicate writing. A spec file alone
+is not proof of review. Run missing applicable hooks or report their blocker.
+`aw-prd` owns `prd_review`; discovery owns `discovery`; the writer/handoff owns
+`spec_review`. Reuse current hook evidence, reconcile findings once, and never
+fabricate discovery on a direct route. Hooks run only when design is enabled and
+their configured skill is non-empty. Human review stays independently gated.
+
+New tracking rows distinguish the one public invocation from internal stage
+execution; see `tracking.md`. Provider handoffs carry the invocation identifier,
+actual stage and mode, and suppress duplicate public-invocation records.
+Historical records retain their original names and interpretation.
+
+## Shipping Modes and Independent Providers
+
+`aw-ship` selects mode before loading procedures or emitting tracking. An explicit
+local commit request uses `local-commit`, never push or PR actions. A description
+request defaults to `description-only`: read available evidence and return text,
+with no repository/PR mutation, fetch, checkout, tracking/session writes, or
+side-effectful evidence capture. `description-update` previews and confirms a
+specific existing PR text replacement; it does not commit, push, create a PR,
+run publication gates, or start CI monitoring. Declining the replacement ends it.
+
+`full-pr` preserves review/spec/README/capture/design checks, local commits,
+push, workflow compliance, late metrics flush, PR application, and configured
+post-PR monitoring. Existing PR descriptions are not rewritten merely because
+new commits were pushed; retain the existing explicit rewrite confirmation.
+New PRs require actual authorization; no mode grants merge/deploy permission.
+Human spec/plan sign-off stays with `aw-request-human-review`.
+
+Keep `workflow.steps.commit` and `workflow.steps.commit_push_pr` independent.
+Local mode resolves only `commit`. Full mode resolves its full-workflow provider
+and passes the separate commit provider contract for any needed local commits.
+Same-name bundled self-overrides enter the appropriate reference without recursive
+router invocation. Missing/incompatible custom providers are blockers, never
+permission to bypass them or broaden a narrower mode. Description providers must
+honor the explicitly narrower text-only contract; do not run a publishing provider
+merely to get its description.
+
+For mutable modes, `shipping-tracking-schema` must confirm support before v2
+tracking. Description modes emit no tracking events, even when tracking is enabled.
+Historical rows retain their old skill names and interpretation; see `tracking.md`.
 
 ## Auxiliary Skill Keys
 
@@ -583,7 +638,7 @@ When `workflow.design.enabled` is false, agents skip design hooks. When it is tr
 
 ## Artifact Handoff Contract
 
-Experience discovery is part of `aw-brainstorm` even when design hooks are off.
+Experience discovery is part of `aw-spec` even when design hooks are off.
 When an intended experience is uncertain, the agent explains its interpretation
 and suggests a small disposable prototype, waiting for agreement before creating
 it. An explicit prototype request already authorizes its stated scope. Human
@@ -599,14 +654,14 @@ rerun hooks. Report unsupported contract elements instead of bypassing agreement
 
 Each workflow step returns the artifact path or ID that becomes input to the next step. Custom replacement skills must preserve this contract.
 
-- `aw-prd` outputs `docs/product/prds/<prd>.md` -> pass to `aw-brainstorm` when ambiguity remains, or `aw-create-spec` when ready for a direct spec draft.
-- `aw-brainstorm` usually outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`; when the user asks for PRD output, route to `aw-prd`.
-- `aw-create-spec` outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`.
+- `aw-prd` outputs `docs/product/prds/<prd>.md`; import/create alone runs no spec hook. Pass to `aw-spec` only when the requested output is a living spec.
+- `aw-spec` routes requested PRD output to `aw-prd`, plans to `aw-plan`, and research to `aw-research`. Exploratory-only requests return context/optional notes, not settled intent. Clear spec requests use the direct writer without a compulsory interview.
+- A completed `aw-spec` spec is `docs/features/<feature>/spec.md`; pass that exact path to `aw-plan` when planning is needed. Discovery notes alone are not an accepted spec.
 - When a PRD becomes a spec, mark the PRD `status: promoted`, set `promoted_to` to the spec path, and leave the PRD body unchanged.
 - When a source artifact is no longer needed in the working tree, mark it `status: archived`; `aw-refresh cleanup` removes it from the working tree and index while git preserves history.
-- `aw-plan` outputs `docs/features/<feature>/plan.md` -> pass to `aw-create-tickets` or `aw-work`.
+- `aw-plan` outputs `docs/features/<feature>/plan.md`; the effective review provider receives this actual path for document review before human review, tickets, or work. Then pass the plan path to `aw-create-tickets` or `aw-work`. A bare `plan` token is not a file target.
 - `aw-create-tickets` outputs ticket IDs/URLs -> pass one ticket at a time to `aw-work`.
-- `aw-commit-push-pr` outputs the PR URL -> invoke `workflow.steps.monitor_pipeline.skill` with it when configured.
+- `aw-ship full-pr` outputs the PR URL -> invoke `workflow.steps.monitor_pipeline.skill` with it when configured.
 
 ## Test Policies
 
@@ -639,3 +694,81 @@ Older installs may contain renamed fields or keys. Run `skills/aw-init/scripts/u
 | Helper keys misplaced under `workflow.steps` | The matching `workflow.auxiliary.<key>.skill` |
 
 Non-skill configuration fields are unchanged and remain authoritative, including `git.commit.*`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`. The migration preserves unknown fields and stops for manual review when old and new routing fields conflict.
+
+
+## Consolidated Entrypoint Upgrade and Rollback
+
+**Consolidation migration prerequisite:** execute the new installer from a separately
+obtained, reviewed checkout/archive. Do not launch a pre-consolidation (including
+0.15.0) global `install.sh --remote` or `upgrade.sh --refresh-skills --remote`:
+that already-running old script retains its unsafe copy/delete functions even
+when it downloads new source, and can overwrite a custom `aw-spec` or `aw-ship`. Updating the
+archive cannot retroactively fix that old bootstrap program.
+
+Obtain the approved candidate/release separately, then run its installer:
+
+```sh
+git clone https://github.com/antonyjclements/augmented-workflow.git /tmp/aw-reviewed-upgrade
+git -C /tmp/aw-reviewed-upgrade checkout <approved-consolidation-commit-or-tag>
+bash /tmp/aw-reviewed-upgrade/skills/aw-init/scripts/install.sh --repo /path/to/target/repo --dry-run
+# Review ownership, collisions, preserved routing and backups before applying.
+bash /tmp/aw-reviewed-upgrade/skills/aw-init/scripts/install.sh --repo /path/to/target/repo
+```
+
+Use a fresh destination instead of overwriting an existing checkout. The ref must
+contain this reviewed migration; no consolidation release ref is selected yet. Preserve
+customized configuration and use the same skills-directory override throughout.
+The remaining upgrade/remote examples assume this new bootstrap prerequisite.
+
+Phase 1 retires bundled `aw-brainstorm` and `aw-create-spec` in favor of `aw-spec`.
+There are no permanently installed aliases; exact old slash commands may fail.
+Use `aw-spec` and reconcile any preserved custom routing explicitly. This change
+does not introduce install profiles or new publication authority. Separately
+authorized Phase 2 now combines retired `aw-commit` and `aw-commit-push-pr`
+into `aw-ship`, reducing verified clean installs from 21 to 20 managed skills.
+Run the current reviewed installer for this upgrade too: a Phase 1 installed
+bootstrap may safely refuse its old helper rather than recognize new fingerprints.
+Do not interpret that refusal as permission to discard customization.
+
+Run the same source bundle's installer with `--dry-run` first:
+
+```sh
+skills/aw-init/scripts/install.sh --repo <target-repo> --dry-run
+```
+
+The preview reports managed replacements/retirements, preserved custom content,
+name collisions and old routing references. Python 3 is needed for fingerprinted
+skill migration; Ruby remains required for `upgrade-config.rb`. Apply without
+`--dry-run` only after resolving blockers. A byte-identical pinned baseline
+helper and affected routing documents (including the preserved Phase 1 checkpoint)
+refresh with backups; customized helpers
+block until explicitly reconciled or replaced with `--with-gates --force`.
+Customized routing docs remain preserved and reported. `--force` can authorize repo-artifact
+overwrite under the existing installer contract, but cannot establish skill
+ownership or override a user-owned `aw-spec` or `aw-ship` collision.
+
+New ownership metadata records exact content fingerprints. Historical name-only
+manifests and pre-manifest directories are trusted only when contents match a
+pinned bundled fingerprint. Customized or unknown retired directories remain
+and are reported separately; do not claim 20 total discoverable skills in those
+installs. Distinct stage providers and customized config/AGENTS remain intact.
+Retired-name values can identify custom providers, so the config migrator reports
+them for explicit reconciliation rather than silently changing them.
+
+Before mutation the installer backs up changed skill directories and ownership/
+version metadata and prints the backup path. Differing repo artifacts that the
+user explicitly permits it to replace receive `.bak-*` backups. Record both
+identities as one rollback set. An interrupted skill transaction blocks the next
+migration until it is restored; rollback refuses changed backups or later edits.
+
+```sh
+skills/aw-init/scripts/install.sh --repo <target-repo> --rollback-skills <printed-backup-path> --dry-run
+skills/aw-init/scripts/install.sh --repo <target-repo> --rollback-skills <printed-backup-path>
+```
+
+Use the same skills-directory override as the original install. This operation
+restores the prior owned bundle and metadata, including the retired entrypoints;
+it does not reset product specs, PRDs, decisions, or user content. Restore any
+separately changed routing/config from its matching backups, verify effective
+providers and discovery, and rerun checks. Rollback requires authorization for
+the target environment. Candidate review receipts are not proof for restored code.

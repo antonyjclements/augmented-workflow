@@ -4,6 +4,7 @@
 require "fileutils"
 require "optparse"
 require "time"
+require "tempfile"
 require "yaml"
 
 DEFAULT_STEPS = %w[
@@ -297,6 +298,7 @@ end
 config = deep_merge(DEFAULT_CONFIG, existing)
 actions = []
 conflicts = []
+notices = []
 
 DEFAULT_AUXILIARY.each do |key|
   misplaced_skill = dig_hash(existing, "workflow", "steps", key, "skill")
@@ -471,6 +473,26 @@ unless valid_policies.include?(policy)
   conflicts << "workflow.implementation.test_policy is #{policy.inspect}; expected one of #{valid_policies.join(', ')}"
 end
 
+# Stage contracts survive entrypoint consolidation. Inspect the resulting stages
+# so legacy git.commit.skill is reported too. A name alone is not ownership proof.
+{
+  "aw-spec" => { "steps" => %w[brainstorm create_spec], "retired" => %w[aw-brainstorm aw-create-spec] },
+  "aw-ship" => { "steps" => %w[commit commit_push_pr], "retired" => %w[aw-commit aw-commit-push-pr] }
+}.each do |entrypoint, group|
+  group["steps"].each do |step|
+    provider = dig_hash(config, "workflow", "steps", step, "skill")
+    next if blank?(provider)
+
+    if group["retired"].include?(provider)
+      notices << "workflow.steps.#{step}.skill=#{provider.inspect} preserved: retired bundled name; " \
+                 "verify ownership, then choose #{entrypoint} for the bundled route or keep your custom provider. " \
+                 "Exact old slash commands have no universal redirect."
+    else
+      notices << "workflow.steps.#{step}.skill=#{provider.inspect} preserved independently"
+    end
+  end
+end
+
 changed = config != existing
 
 puts "Augmented Workflow config upgrade"
@@ -484,6 +506,12 @@ if actions.empty?
 else
   puts "Migrations:"
   actions.each { |action| puts "- #{action}" }
+end
+
+unless notices.empty?
+  puts
+  puts "Entrypoint migration review (stage keys are unchanged):"
+  notices.each { |notice| puts "- #{notice}" }
 end
 
 if conflicts.any?
@@ -502,7 +530,9 @@ end
 if options[:apply]
   FileUtils.mkdir_p(File.dirname(config_path))
   if File.exist?(config_path)
-    backup_path = "#{config_path}.bak-#{Time.now.utc.strftime('%Y%m%d%H%M%S')}"
+    backup = Tempfile.create(["config.yml.bak-#{Time.now.utc.strftime('%Y%m%d%H%M%S')}-", ""], File.dirname(config_path))
+    backup_path = backup.path
+    backup.close
     FileUtils.cp(config_path, backup_path)
     puts
     puts "Backup: #{backup_path}"

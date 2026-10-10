@@ -1,4 +1,23 @@
 decisions:
+  - path: docs/decisions/2026-10-10-consolidate-shipping-entrypoints.md
+    title: Consolidate shipping entrypoints with explicit mutation boundaries
+    date: 2026-10-10
+    status: active
+    tags:
+      - workflow
+      - skills
+      - shipping
+      - permissions
+  - path: docs/decisions/2026-10-10-consolidate-spec-entrypoints.md
+    title: Consolidate spec entrypoints while preserving workflow stages
+    date: 2026-10-10
+    status: active
+    tags:
+      - workflow
+      - skills
+      - specs
+      - tracking
+      - installer
   - path: docs/decisions/2026-07-27-keep-tracking-emit-in-skills.md
     title: Keep the skill tracking emit inline rather than moving it to a lifecycle hook
     date: 2026-07-27

@@ -1,311 +1,281 @@
 ---
-status: completed
-created: 2026-07-18
-origin: docs/features/augmented-workflow/spec.md
+title: Consolidate AW skill entrypoints without losing workflow contracts
+type: refactor
+status: active
+created: 2026-10-10
 depth: deep
+origin: docs/features/augmented-workflow/spec.md
+baseline_version: 0.15.0
+baseline_commit: 5fae68e9f7c1b397dd0721cfd4183cf9760c2900
 ---
 
-# Migration Behavior Pins Plan
+# AW skill consolidation plan
 
-## Problem and Scope
+## Summary
 
-Behavior pins currently compare a same-repo `base` worktree against the current checkout. That works for refactors inside one repository, but not for migrations where the old implementation lives in another repo or language.
+Consolidate `aw-brainstorm` and `aw-create-spec` into one proposed `aw-spec` entrypoint with exploratory and direct/update routes. Preserve separate PRD, living-spec, and implementation-plan contracts. Reduce the installed surface from **22 to 21 skills**, then evaluate a separate, optional shipping consolidation that could reduce it to 20.
 
-This plan adds first-class reference-repo migration pins while preserving the existing same-repo behavior. The first implementation should compare public behavior only, keep manifest execution constrained to current-tree Node harnesses, and make golden fixtures an optional cache path after live reference comparison works.
+Phase 1 implementation (U1–U7) was authorized on 2026-10-10 and its tested patch
+was preserved. Phase 2 (U8) was separately authorized later that day. Publication, merge, deployment, and release are not authorized by this
+implementation handoff. The prior completed plan is preserved at
+`docs/features/augmented-workflow/migration-behavior-pins-plan.md`. Stable U IDs
+are unchanged; execution progress is kept outside this plan.
 
-In scope:
+## Problem and scope
 
-- `mode: reference-repo` behavior pin manifests.
-- Pinned reference repo/ref checkout management under `.aw/pin/`.
-- Live black-box comparison harness support through environment variables.
-- Result JSON and verdicts that keep invalid reference setup separate from candidate drift.
-- Docs, installer artifact parity, and functional test coverage.
+Current main was rechecked on 2026-10-10 and remains the baseline commit above. Its 22 skill entrypoints already include several successful architectural consolidations: PRD import/create, review modes, capture modes, and refresh modes. The strongest remaining duplication is two procedures that write the same living spec and index.
 
-Out of scope for the first pass:
+The existing split expresses a useful distinction: uncertain product intent needs discovery; clear requirements need direct writing. The proposal preserves that distinction inside one router and removes duplicated spec-authoring instructions. It does not assume fewer skills automatically improve outcomes.
 
-- General shell commands in manifests.
-- Long-lived dependency installation or package-manager orchestration.
-- Automatic golden fixture generation.
-- Remote credential management beyond what `git` already has locally or in CI.
-- Semantic correctness of migrated behavior beyond equivalence.
+### In scope for Phase 1
 
-## Requirements Traceability
+- One discoverable spec-authoring entrypoint and one shared spec-writing procedure.
+- Explicit requested-output and ambiguity routing across PRD, spec, plan, research, and exploration.
+- Preservation of stage-specific overrides, design hooks, trace annotations, and human-review boundaries.
+- Mode/stage-aware invocation tracking, compatible historical metrics, and installer migration.
+- A narrowly scoped reconciliation of the existing plan-review instruction mismatch.
+- Baseline/candidate evaluation, documentation, upgrade/rollback tests, and release criteria.
 
-- Spec behavior pinning section: migration pins extend same-repo pins beyond old-commit/current-checkout comparisons.
-- Spec behavior pinning section: reference-repo pins are first-class and compare through black-box public boundaries such as CLIs, APIs, parsers, generated files, or transforms.
-- Spec behavior pinning section: golden fixtures are optional cached outputs derived from the pinned reference repo/ref, not the primary source of truth.
-- Spec behavior pinning section: migration pins record provenance needed to regenerate or audit fixtures.
-- Spec behavior pinning section: migration pins must not require matching internals, source layout, class names, or language structure.
-- Spec acceptance criteria: migration pins declare a pinned reference repo/ref and distinguish invalid reference characterization from candidate drift.
-- Spec acceptance criteria: live-reference mode remains available even when golden fixtures exist.
+### Out of scope
 
-## Relevant Existing Patterns
+- Combining PRDs, specs, and plans into one artifact.
+- Making PRDs, plans, prototypes, or external tickets mandatory for every task.
+- Combining review with compliance, capture with synthesis, or planning with ticket publication.
+- Implementing install profiles or assuming installed skills can be hidden portably.
+- Rewriting old decision records or source PRD bodies.
+- Changing gate semantics, granting new permissions, or executing deployment/publication.
 
-- `.scripts/aw-gate.js` owns all deterministic gate behavior with zero runtime dependencies and a small internal YAML parser.
-- `.scripts/aw-gate.js` and `skills/aw-init/artifacts/aw-gate.js` must stay byte-identical; `scripts/test-install.sh` enforces drift.
-- Existing behavior pins use `pinConfig`, `loadPinManifests`, `validatePinManifest`, `runOnePin`, `pinVerdict`, and `cmdPinRun`.
-- Manifest commands are intentionally restricted by `parsePinCommand` to empty values or `node <repo-relative .js path>`.
-- Pin scratch state, logs, and worktrees live under `.aw/pin/`, which is git-ignored.
-- `scripts/test-install.sh` creates disposable local repos to test pin pass/fail classes, unsafe command rejection, support-file copying, worktree cleanup, and `pin check`.
-- Installed docs have root copies and artifact copies: `docs/workflow/gates.md` mirrors `skills/aw-init/artifacts/gates.md`, and `docs/standards/behavior-pinning.md` mirrors `skills/aw-init/artifacts/behavior-pinning.md`.
+## Requirements and traceability
 
-## Applicable Standards
+| ID | Requirement | Main units | Evidence |
+|---|---|---|---|
+| R1 | Replace the two competing spec entrypoints with one, retaining direct and exploratory paths | U2, U4, U6 | Exact installed inventory; routing cases |
+| R2 | Honor requested output; preserve PRD provenance, living intent, and temporary plans | U2, U4 | Artifact contract fixtures and manual review |
+| R3 | Do not broaden write, prototype, implementation, deletion, or publication authority | U1, U2, U7, U8 | Permission-boundary cases |
+| R4 | Preserve configurable stages, provider overrides, hooks, and stage-correct tracking | U3, U4 | Deterministic tests plus routed scenarios |
+| R5 | Preserve standards, requirement anchors, review requirements, and freshness evidence | U2, U3, U7 | Trace/gate tests; plan-review case |
+| R6 | Safely migrate owned installs while preserving user skills and local customization | U5, U6 | Installer, upgrade, rollback fixtures |
+| R7 | Demonstrate a useful result beyond the reduced count | U1, U7 | Baseline/candidate comparison |
+| R8 | Keep shipping consolidation independently gated and optional | U8 | Separate approval and permission test results |
 
-- `docs/standards/behavior-pinning.md`: preserve equivalence-not-correctness semantics, separate subject from oracle/support, and keep manifest command execution narrow.
-- `docs/standards/coding-approach.md`: make surgical changes, avoid speculative abstraction, and verify behavior with concrete tests.
+## Decisions and proposed design
 
-## Decisions
+### D1. Use `aw-spec` as the proposed canonical name
 
-- Keep same-repo pins as the default when `mode` is absent. Existing manifests continue to work unchanged.
-- Add `mode: reference-repo` for migration pins rather than overloading `base`.
-- Use current-tree Node harnesses as the authority. The gate prepares reference and candidate roots, then invokes `harness` from the candidate repo with environment variables instead of executing arbitrary manifest shell.
-- Provide `AW_PIN_MODE`, `AW_PIN_MANIFEST`, `AW_PIN_REFERENCE_ROOT`, `AW_PIN_CANDIDATE_ROOT`, and `AW_PIN_GOLDEN_ROOT` environment variables to migration harnesses.
-- Treat reference checkout/setup failure as `pin-not-characterizing` because the reference side cannot be trusted. Let migration harnesses return exit code `10` when the pinned reference implementation does not satisfy the oracle. Treat candidate mismatch or ordinary candidate harness failure as `equivalence-broken`.
-- Clone/fetch reference repos with `git` argument arrays and `shell: false`. Do not pass manifest strings to a shell, and validate repo/ref values for supported git transports and refs rather than relying on shell metacharacter filtering.
-- Support local reference repos in tests through repo-relative paths or `file://` URLs so functional coverage does not require network.
-- Document golden fixtures now, but implement only enough schema/output provenance to make later fixture generation compatible.
+The outcome is durable feature intent, whether the input is clear or ambiguous. Natural language such as “brainstorm this” remains a trigger for its exploratory path. Do not retain permanent, independently discoverable `aw-brainstorm` and `aw-create-spec` alias skills alongside it: that would preserve competing descriptions.
 
-## Implementation Units
+The name is a proposal, not an existing command. Exact legacy slash-command compatibility depends on the runtime; document unsupported old invocations rather than claiming a universal redirect.
 
-### Unit 1: Manifest Loading and Validation
+### D2. Route by requested outcome before ambiguity
 
-Goal: Extend pin manifests without breaking existing same-repo pins.
+1. A request to create/import/save a PRD goes to `aw-prd`.
+2. An exploratory-only request stays exploratory, with notes only when useful/requested; no silently accepted spec.
+3. A clear request to document or update durable intent uses the direct spec path.
+4. Consequential ambiguity uses discovery, then the shared writer once ready.
+5. A plan request goes to `aw-plan`; research returns evidence without independently changing intent.
+6. Trivial fixes retain the existing lightweight route.
 
-Likely files:
+For an external PRD used to create a spec, preserve the source before promotion. Reuse an existing imported artifact when it is already present. PRD body preservation, lifecycle metadata, and index updates must remain distinct from writing the living spec.
 
-- `.scripts/aw-gate.js`
-- `skills/aw-init/artifacts/aw-gate.js`
-- `scripts/test-install.sh`
+### D3. Use progressive references, not a concatenated mega-skill
 
-Behavior changes:
+Proposed new files:
 
-- Parse optional `mode`; default to `same-repo`.
-- Parse optional `reference` mapping with `repo` and `ref` for `reference-repo` mode.
-- Parse optional `golden` mapping with `dir` and metadata fields without using it as the default execution path.
-- Validate that same-repo manifests still require `base`.
-- Validate that reference-repo manifests require `reference.repo` and `reference.ref`.
-- Validate reference repo values as data, not commands. Allow only supported git transports or local paths and valid refs; reject unsupported forms before any checkout occurs.
-- Keep `subject`, `oracle`, `support`, `setup`, and `harness` rules intact.
+- `skills/aw-spec/SKILL.md`: compact router, boundaries, return contract.
+- `skills/aw-spec/references/discovery.md`: exploratory dialogue and experience-discovery loop.
+- `skills/aw-spec/references/spec-writing.md`: sole writer for template, standards, index, trace IDs, provenance, and applicable review.
+- `skills/aw-spec/references/universal-brainstorming.md`: preserve the existing non-software exploration route where applicable.
 
-Tests:
+Keep existing optional references/assets only when the new routes need them. Verify all moved references. Do not increase the current 2,200-word skill-body budget simply to fit the merger.
 
-- Add `scripts/test-install.sh` cases for missing reference repo, missing reference ref, invalid mode, and unchanged same-repo manifest compatibility.
-- Assert unsafe `reference.repo` and `reference.ref` values are rejected before any checkout occurs.
+### D4. Preserve stage contracts independently of entrypoints
 
-Edge cases:
+Keep `workflow.steps.brainstorm` and `workflow.steps.create_spec` during Phase 1. They represent replaceable stages, not required separate installed skills. A direct path resolves the create-spec override. An exploratory path resolves the brainstorm override first; if a spec is still needed after discovery, it then resolves and invokes the create-spec override. Use the bundled shared writer only when no custom create-spec provider is configured, or a validated bundled self-reference resolves to that writer. An override that already returns a valid spec must not trigger duplicate writing. Its handoff must report which applicable hooks actually ran, with current evidence; the spec alone is not evidence that spec review happened. Skip a duplicate hook only when that evidence exists, otherwise run the missing applicable hook or report its blocker.
 
-- Old manifests with no `mode`.
-- YAML parser behavior for nested mappings.
-- Manifest command script should remain part of judged oracle files even when omitted from `oracle`.
+Retain the existing custom-provider contracts. If two custom providers differ, preserve both. If an override cannot support the required contract, report the limitation rather than silently bypassing it. Avoid recursion when an override names the new bundled entrypoint.
 
-### Unit 2: Reference Checkout Lifecycle
+### D5. Make tracking stage-aware without reinterpreting old events
 
-Goal: Prepare a pinned reference implementation checkout for migration comparisons.
+The current helper infers one stage per skill and chooses the first configured matching stage. That is insufficient once a skill serves multiple stages. Extend the event contract to identify the actual selected mode/stage, retain old event readability, and distinguish one public invocation from internal stage execution. Decide and document the exact event schema before implementation. This plan intentionally does not invent new helper flags or commands.
 
-Likely files:
+Do not rename gate events to skill names. Review, compliance, capture, and synthesis evidence keep their existing identities and receipt requirements.
 
-- `.scripts/aw-gate.js`
-- `skills/aw-init/artifacts/aw-gate.js`
-- `.gitignore`
-- `skills/aw-init/scripts/install.sh`
-- `skills/aw-init/scripts/upgrade-config.rb`
+## Implementation units
 
-Behavior changes:
+### U1. Establish the baseline and evaluation fixtures
 
-- Create per-run reference checkouts under `pin.worktree_dir`, using deterministic manifest-derived names plus a unique suffix.
-- Support repo-relative local paths, absolute local paths, and `file://` URLs for tests and offline migration setups.
-- Use `git clone` or a local checkout strategy with `execFileSync`/`spawnSync` and `shell: false`.
-- Check out the exact `reference.ref`, then record `reference_sha` in result JSON.
-- Clean temporary checkouts on success and failure, matching existing worktree cleanup expectations.
-- Keep `.aw/pin/` as the only required gitignore entry unless a separate cache directory becomes necessary.
+**Goal:** Measure current behavior before changing it. **Requirements:** R3, R7. **Dependencies:** implementation authorization.
 
-Tests:
+**Files:** Create proposed `test/skills/consolidation-cases.json` and `test/skills/consolidation-evaluation.md`. Inspect existing `scripts/test-install.sh`, gate tests, and applicable standards first. These new paths are proposed, not existing test infrastructure.
 
-- Extend `scripts/test-install.sh` with a disposable old repo and new repo. The old repo should expose a simple CLI or file transform, and the new repo should initially match it.
-- Assert reference checkout cleanup leaves no per-run directories behind.
-- Assert result JSON records `reference.repo`, `reference.ref`, and `reference_sha`.
+**Approach:** Freeze the prompt cases below, expected outcomes, permission boundaries, and grading rubric. Run baseline and candidate with the same runtime/model configuration, repo fixtures, tools, and context. Use repeated runs across available supported runtimes; record unavailable runtimes and do not claim coverage. Distinguish static text/structure assertions from actual model behavior.
 
-Edge cases:
+**Test scenarios:** Explicit PRD versus spec request; direct versus ambiguous intent; exploration without commitment; tiny fix; existing spec update; unavailable source; different custom stage providers; declined prototype; report-only research.
 
-- Missing `git`.
-- Unreachable local reference path.
-- Unknown reference ref.
-- Clone succeeds but checkout fails.
+**Verification:** Baseline results include selected skill/mode, artifacts, questions, tool mutations, hook invocations, context loaded when measurable, latency, and quality findings. No unsupported inference from invocation counts to successful completion.
 
-### Unit 3: Migration Harness Execution Contract
+### U2. Implement the unified spec router and shared writer
 
-Goal: Let current-tree harnesses compare the old reference and current candidate through public behavior.
+**Goal:** Remove duplicate authoring while preserving both intake paths. **Requirements:** R1–R3, R5. **Dependencies:** U1; reviewed stage contract D4.
 
-Likely files:
+**Files:** Create the `skills/aw-spec/` files above; retire `skills/aw-brainstorm/SKILL.md` and `skills/aw-create-spec/SKILL.md` in the same coordinated release. Modify `skills/aw-prd/SKILL.md` and `skills/aw-plan/SKILL.md` only for affected routing/handoff references. Add proposed `test/skills/spec-contract.test.js`; extend the U1 cases.
 
-- `.scripts/aw-gate.js`
-- `skills/aw-init/artifacts/aw-gate.js`
-- `test/pin/*.pin.js`
-- `scripts/test-install.sh`
+**Approach:** Preserve the full source inventory before moving references. Reuse current template/schema-preservation behavior. Load applicable standards; preserve requirement IDs; use the existing `trace-annotate` mechanism and its disabled no-op behavior. Do not infer new requirements from filename or code alone without identifying uncertainty.
 
-Behavior changes:
+**Test scenarios:** Clear input writes spec without compulsory interview; ambiguous input resolves blockers; exploratory-only output does not settle intent; existing spec retains metadata and stable IDs; imported PRD body stays unchanged through promotion; standards and index schemas are preserved; no duplicate feature; prototype decline remains respected.
 
-- For `reference-repo` mode, run the current-tree `harness` once from the candidate repo root.
-- Inject environment variables:
-  - `AW_PIN_MODE=reference-repo`
-  - `AW_PIN_MANIFEST=<manifest path>`
-  - `AW_PIN_REFERENCE_ROOT=<temporary reference checkout>`
-  - `AW_PIN_CANDIDATE_ROOT=<current repo root>`
-  - `AW_PIN_GOLDEN_ROOT=<golden.dir when configured>`
-- Preserve command restriction to `node <repo-relative .js path>`.
-- Keep stdout/stderr hashes, excerpts, and logs in the existing result shape.
-- Map reference preparation failures to `pin-not-characterizing`.
-- Reserve migration harness exit code `10` for `pin-not-characterizing` when the reference implementation fails the oracle after checkout succeeds.
-- Map any other non-zero harness status to `equivalence-broken` after reference preparation succeeds.
+**Verification:** One canonical writer owns all spec mutations. The source tree and clean installed candidate expose 21 bundled entrypoints. Explicit plan/PRD/research outcomes remain distinguishable.
 
-Tests:
+### U3. Preserve overrides and extend tracking deliberately
 
-- Add a passing migration pin where a Node harness reads the same fixture, invokes old and new public scripts, normalizes output, and compares.
-- Add a failing candidate case and assert `equivalence-broken`.
-- Add a broken reference checkout case and assert `pin-not-characterizing`.
-- Add a reference-oracle failure case where the migration harness returns the reserved `pin-not-characterizing` status.
-- Add a test proving the harness receives `AW_PIN_REFERENCE_ROOT` and `AW_PIN_CANDIDATE_ROOT`.
+**Goal:** Keep stage routing and observability correct. **Requirements:** R4, R5. **Dependencies:** U1, agreed D4/D5; may proceed alongside U2.
 
-Edge cases:
+**Files:** Modify `skills/aw-init/artifacts/aw-gate.js` and mirrored `.scripts/aw-gate.js`; `skills/aw-init/artifacts/tracking.md` and `docs/workflow/tracking.md`; add proposed `test/gate/skill-routing.test.js`; extend `package.json` test wiring only after the new test exists. Review `skills/aw-init/scripts/upgrade-config.rb`.
 
-- Harness should not depend on internal source layout of the reference repo.
-- Harness may spawn language-specific commands, but that responsibility stays inside the reviewed current-tree Node oracle.
-- Timeouts should apply to the migration harness just like same-repo harnesses.
+**Approach:** Replace ambiguous first-match inference for the new multi-stage route with the documented explicit stage/mode contract. Preserve the old fallback for historical callers. Validate supplied stage values. Define no-recursion behavior for bundled self-overrides and failure behavior for unavailable custom skills.
 
-### Unit 4: Golden Fixture Provenance
+**Test scenarios:** Direct route records create-spec stage; exploratory route records the brainstorm stage with exploratory mode and any subsequent create-spec stage distinctly; two overrides naming the same skill do not misattribute stages; custom brainstorm returning notes followed by a different custom create-spec provider invokes each exactly once; a brainstorm provider returning a valid spec skips duplicate writing; different custom providers remain independent; legacy events remain readable; disabled tracking performs no writes; gate names and receipt consumption are unchanged.
 
-Goal: Make golden fixtures compatible with reference-repo pins without making them the primary authority yet.
+**Verification:** Deterministic fixtures pass and representative runtime cases show actual stage behavior. Exactly one public invocation is counted per invocation, without hiding separately executed stages.
 
-Likely files:
+### U4. Reconcile routing, hooks, and the scoped review mismatch
 
-- `.scripts/aw-gate.js`
-- `skills/aw-init/artifacts/aw-gate.js`
-- `docs/standards/behavior-pinning.md`
-- `skills/aw-init/artifacts/behavior-pinning.md`
-- `docs/workflow/gates.md`
-- `skills/aw-init/artifacts/gates.md`
+**Goal:** Give all callers the same contract. **Requirements:** R1, R2, R4, R5. **Dependencies:** U2, U3.
 
-Behavior changes:
+**Files:** Modify `skills/aw-help/SKILL.md`, affected references in `skills/aw-work/`, `skills/aw-init/SKILL.md`, `skills/aw-plan/SKILL.md`, and other current callers identified by a repository-wide reference search. Update `docs/features/augmented-workflow/spec.md` and its index metadata if required. Extend `test/skills/consolidation-cases.json` and `test/skills/spec-contract.test.js`.
 
-- Parse and echo golden fixture configuration in result JSON when present:
-  - `golden.dir`
-  - `golden.generated_from.repo`
-  - `golden.generated_from.ref`
-  - `golden.generated_from.sha`
-- Do not generate fixtures in this first pass.
-- Do not let golden fixtures replace live reference mode for default `pin run`.
-- Document that future fast CI can compare candidate output against fixtures, while release gates or suspicious drift can run live-reference mode.
+**Approach:** Specify ownership and order of `prd_review`, `discovery`, and `spec_review`. Run only applicable, enabled, non-empty hooks; direct spec writing does not fabricate a discovery stage. Preserve human-review and experience-prototype boundaries. Reconcile the living spec's requirement for plan document review with `aw-plan`'s handoff instructions, without changing unrelated review policy. Verify how the existing `aw-review` router receives a plan path rather than assuming a bare mode token is sufficient.
 
-Tests:
+**Test scenarios:** PRD import-only runs no spec hook; import-to-spec runs each applicable hook once; override returning a spec does not cause a second writer/hook; disabled design hooks remain skipped; actual plan review precedes human sign-off/ticket/work handoff; no automatic publication from writing a spec or plan.
 
-- Add a `scripts/test-install.sh` case where a migration pin declares `golden.dir`; assert the result JSON includes provenance and still performs a live reference run.
+**Verification:** Source contracts, help recommendations, and observed routing agree. Plan-review drift is resolved in the same narrow contract pass, with current review permissions preserved.
 
-Edge cases:
+### U5. Migrate installation and protect customization
 
-- Golden directory missing should not fail live-reference mode unless the harness itself requires it.
-- Fixture provenance should not be accepted as a substitute for `reference.repo` and `reference.ref`.
+**Goal:** Retire old bundled names safely. **Requirements:** R6. **Dependencies:** U2, U3; coordinate final changes with U4.
 
-### Unit 5: Pin Check Coupling Rules for Migration Pins
+**Files:** Modify `skills/aw-init/scripts/install.sh`, `skills/aw-init/scripts/upgrade-config.rb`, affected `skills/aw-init/artifacts/config.yml` guidance if needed, and `scripts/test-install.sh`.
 
-Goal: Keep oracle and subject changes separated for migration pins too.
+**Approach:** Extend owned-skill retirement for both manifest-based and pre-manifest histories. Preserve distinct existing stage keys and user-defined providers. Produce a dry-run migration report before destructive changes. Detect an existing user-owned `aw-spec` name collision and stop for a resolution; never overwrite it simply because the new bundle uses that name. For ambiguous pre-manifest ownership, preserve/report rather than deleting an unverified custom directory. Distinguish bundled legacy references from user-custom providers and explain exact-command compatibility limits.
 
-Likely files:
+**Test scenarios:** Clean install; current ownership manifest; old install without manifest; custom `aw-*` directory; custom content under a former bundled name; pre-existing user-owned `aw-spec`; customized AGENTS/config preserved without explicit overwrite; repeated install; interrupted migration; rollback to the pinned previous bundle.
 
-- `.scripts/aw-gate.js`
-- `skills/aw-init/artifacts/aw-gate.js`
-- `scripts/test-install.sh`
+**Verification:** Fresh installs and migrations with fully verified ownership contain exactly the intended 21 managed bundled skills. Ambiguous/custom preserved legacy directories may leave additional discoverable skills; report those separately as unresolved migration work rather than claiming a reduced total. No unrelated skill or custom configuration is lost. Stale managed references are migrated or clearly reported before users encounter a missing command.
 
-Behavior changes:
+### U6. Update documentation and package the coordinated change
 
-- Existing `pin check` should continue treating the manifest, oracle, support, and harness command script as judged files.
-- For migration pins, changes to the manifest's `reference`, `golden`, or harness support remain oracle-side changes.
-- `subject` continues to represent current candidate files being judged.
-- `Pin-Override: <manifest path> - <reason>` remains the override mechanism.
+**Goal:** Make the new surface discoverable and internally consistent. **Requirements:** R1, R6. **Dependencies:** U4, U5.
 
-Tests:
+**Files:** Modify `README.md`; `skills/aw-init/artifacts/AGENTS.md` and `AGENTS.md`; `skills/aw-init/artifacts/workflow-readme.md` and `docs/workflow/README.md`; `skills/aw-init/artifacts/field-guide.md` and `docs/workflow/field-guide.md`; relevant feature docs; new decision record and `docs/decisions/index.yml`; release-version files and `CHANGELOG.md` only when a release version is selected.
 
-- Add a migration pin history test where one commit changes candidate `subject` and the migration harness; assert `pin check` fails.
-- Add an override trailer case and assert it passes.
-- Add a candidate-only commit and assert it does not fail `pin check`.
+**Approach:** Record a new decision superseding the affected May split; do not rewrite historical decisions. Separate canonical skill inventory from the everyday menu. During Phase 1 the eight-item menu uses `aw-commit-push-pr`, not the unimplemented `aw-ship`: help, spec, plan, work, debug, review, commit-push-pr, capture. Keep `aw-commit` clearly available for local-only commits. The eventual shipping name appears only in the conditional Phase 2 proposal.
 
-Edge cases:
+**Test scenarios:** All executable examples resolve to installed skills/helpers; moved references exist; source and self-hosted mirrors match; no old name remains as active routing outside explicit migration/history documentation; normal tiny-task paths stay lightweight.
 
-- Reference repo changes are outside the current repo and cannot be seen by `pin check`; the pinned `reference.ref` is the local audit boundary.
+**Verification:** Existing installer drift/reference/word-budget checks pass. Version markers and package version remain consistent if bumped. No claim that a shorter menu reduces model-visible descriptions.
 
-### Unit 6: Documentation and Installer Artifacts
+### U7. Verify, compare, and decide whether to release Phase 1
 
-Goal: Make the new behavior understandable and installable without drift.
+**Goal:** Establish behavioral parity and practical benefit. **Requirements:** R3, R5, R7. **Dependencies:** U1–U6.
 
-Likely files:
+**Files:** Update proposed `test/skills/consolidation-evaluation.md` with actual evidence; add focused regression cases to the corresponding tests, not just narrative assertions.
 
-- `docs/workflow/gates.md`
-- `skills/aw-init/artifacts/gates.md`
-- `docs/workflow/README.md`
-- `skills/aw-init/artifacts/workflow-readme.md`
-- `docs/standards/behavior-pinning.md`
-- `skills/aw-init/artifacts/behavior-pinning.md`
-- `skills/aw-pin-behavior/SKILL.md`
-- `README.md`
-- `CHANGELOG.md`
+**Approach:** Run the static/deterministic suite and repeat U1's runtime evaluation on the candidate. Review the entire final diff, including installer sources and mirrors. Use the configured review and compliance workflow only after actual work; never stamp gates solely to make checks green.
 
-Behavior changes:
+**Test scenarios:** Entire matrix below; real upgrade fixtures; source-preserving PRD promotion; mode/stage telemetry; old/new name coexistence and near-duplicate external skills; trivial-task negative controls.
 
-- Document same-repo vs reference-repo manifest shape.
-- Document migration harness environment variables.
-- Document golden fixtures as optional cache/provenance, not the authority.
-- Update `aw-pin-behavior` so it can guide authors toward migration pins when the old implementation lives outside the current repo.
-- Update README because user-visible workflow behavior changes.
-- Add a changelog entry if the implementation is shipped under a new version.
+**Verification / release gate:** Zero observed unauthorized-action regressions; no material artifact or override regression; no destructive migration defect; all applicable deterministic tests pass. Predeclare the comparison rubric in U1. Release only with a demonstrated improvement in routing reliability, unnecessary clarification, procedure consistency, or measured loaded context. If runtime results are inconclusive, report that honestly and limit claims to deduplication/maintainability; do not market an unproved reliability gain.
 
-Tests:
+### U8. Separately authorized shipping consolidation
 
-- `scripts/test-install.sh` drift guards for root docs vs `skills/aw-init/artifacts/*`.
-- Existing changelog/version guard when a version bump is included.
+**Goal:** Evaluate `aw-commit` + `aw-commit-push-pr` → proposed `aw-ship`. **Requirements:** R3, R8. **Dependencies:** separate approval received 2026-10-10; permission-boundary baseline and independent review remain required. It does not alter the preserved Phase 1 checkpoint.
 
-Edge cases:
+**Files:** Candidate `skills/aw-ship/SKILL.md` and lazy references; current `skills/aw-commit/` and `skills/aw-commit-push-pr/`; affected installer/routing/tracking docs; proposed `test/skills/shipping-permissions-cases.json` and `test/skills/shipping-contract.test.js`.
 
-- Keep installed docs concise and avoid expanding `AGENTS.md` unless routing changes require it.
+**Approach:** First share duplicated commit mechanics. Only then consider one public router for local commit, full PR workflow, description-only, and description-update. Preserve separate `commit`/`commit_push_pr` stage overrides and the existing full workflow's review, push, compliance, metrics, and CI ordering. Keep human sign-off PRs independently accessible. Do not concatenate the already near-budget shipping body.
 
-## Test Plan
+**Test scenarios:** “Commit this” never pushes/opens PR; “draft description” changes no repo/PR state; description-update does not commit/push; full PR flow honors existing approvals and provider overrides; existing-PR rewrite behavior remains explicit; detached/default-branch behavior preserves user work; unavailable GitHub path reports the blocker; targeted feedback handling stays outside this merger.
 
-Primary verification follows `workflow.implementation.test_policy: acceptance-first`.
+**Verification:** Separate passing deterministic and repeated runtime permission tests, independent review, and explicit go/no-go decision. Only an approved, verified release reaches 20 skills and replaces the everyday menu's shipping entry with `aw-ship`.
 
-- `bash -n scripts/test-install.sh`
-- `bash -n skills/aw-init/scripts/install.sh`
-- YAML/frontmatter parse for `docs/features/augmented-workflow/spec.md`, `docs/features/augmented-workflow/plan.md`, and `docs/features/index.yml`
-- Targeted `node .scripts/aw-gate.js pin --json run` for the existing self-pin
-- `bash scripts/test-install.sh`
+## Acceptance-case matrix
 
-Acceptance-derived scenarios to cover in `scripts/test-install.sh`:
+| Case | Input / condition | Required result |
+|---|---|---|
+| A1 | Save an external PRD | Preserve source PRD; no spec or implementation |
+| A2 | Clear PRD to spec | Reuse/import provenance; direct spec; no compulsory interview |
+| A3 | Ambiguous product idea | Resolve consequential ambiguity; label deferred questions |
+| A4 | Compare ideas without commitment | Exploration only; no settled feature intent |
+| A5 | Document existing behavior | Evidence-backed spec update; uncertainty explicit |
+| A6 | Draft stakeholder PRD | Authored PRD; no automatic promotion |
+| A7 | Plan from ready spec | Units/tests/sequencing; no implementation or progress state |
+| A8 | Focused research question | Cited evidence; no silent product-doc write |
+| A9 | Typo or tiny mechanical fix | Existing direct lightweight path |
+| A10 | Existing spec with IDs/custom index | Preserve IDs/schema and update in place |
+| A11 | Prototype suggested then declined | No prototype; uncertainty remains visible |
+| A12 | Enabled hooks/custom providers | Appropriate stage/provider; each hook once |
+| A13 | Same provider configured twice | Correct actual-stage tracking; no recursion |
+| A14 | Missing source or provider | Honest blocker; no invented evidence/bypass |
+| A15 | Old install/custom skill collision | Safe migration or explicit stop; no silent overwrite |
+| A16 | Local-only commit / PR draft | No publication or unrelated mutations |
 
-- Existing same-repo pins still pass with no `mode`.
-- Reference-repo migration pin passes when old and new public behavior match.
-- Reference-repo migration pin fails as `equivalence-broken` when candidate public behavior differs.
-- Reference-repo migration pin fails as `pin-not-characterizing` when the reference repo/ref cannot be prepared.
-- Reference-repo migration pin fails as `pin-not-characterizing` when the checked-out reference implementation does not satisfy the oracle.
-- Migration harness receives reference and candidate root environment variables.
-- Golden fixture config is recorded as provenance while live-reference mode still runs.
-- `pin check` rejects coupled candidate subject and migration oracle/support changes without a `Pin-Override` trailer.
-- Unsafe manifest command strings remain rejected and are never executed.
+## Verification commands and evidence
 
-## Risks and Open Questions
+Existing commands inspected in the repository, to run only during authorized implementation:
 
-- Networked reference repos can make CI slower or flaky. First tests should use local repos, and docs should recommend CI caching or local mirrors for remote references.
-- Dependency setup for old implementations may be expensive. The first pass should leave setup inside reviewed Node harnesses rather than adding manifest shell.
-- Private reference repos depend on existing git credentials. The gate should surface git errors clearly without owning credential setup.
-- Golden fixture generation is intentionally deferred; implementing fixture generation too early risks designing a second test runner before the live reference contract is proven.
-- The result taxonomy may need a future `reference-error` label, but the first pass can map reference preparation failure to the existing `pin-not-characterizing` class to preserve current semantics.
+```sh
+bash scripts/test-install.sh
+npm run gate:test
+node .scripts/aw-gate.js validate
+node scripts/workflow-health.js --no-run --json
+```
 
-## Deferred Work
+`workflow-health --no-run` is a static health inspection, not a substitute for executing the gate suite. Existing configured gate/trace/pin checks may require current evidence and a full checkout; report missing prerequisites rather than fabricating receipts. New proposed tests require implementation and test-script wiring before they can be run. No command above was executed to prepare this document.
 
-- `node .scripts/aw-gate.js pin golden generate` for audited fixture generation from a pinned reference repo/ref.
-- `pin run --mode golden` for fast candidate-vs-fixture checks.
-- Reference checkout cache reuse across runs.
-- Optional manifest support for multiple references when migrating from several legacy systems.
-- Optional richer structured harness protocol if single-process Node harnesses become limiting.
+Do not claim all-runtime validation from one runtime. Keep passed, failed, skipped, and never-run results separate. Static instruction-string tests cannot prove mode selection, permission behavior, or hook ordering by an agent.
+
+## Rollout and rollback
+
+1. Freeze the old and candidate evaluation inputs; pin the current commit as the comparison baseline.
+2. Implement Phase 1 on an authorized branch with a coherent source/installer/docs change. Test clean and upgraded installations in disposable directories, not a user's live global skill directory.
+3. Review migration dry-run output and custom-provider/name collisions before a real upgrade. Preserve backups of owned installed skills and changed configuration/routing files with their pre-upgrade identity.
+4. Ship the new bundle and affected routing docs together. Report repositories whose locally customized old routing was intentionally preserved and still needs reconciliation.
+5. If evaluation or migration exposes a material regression, stop rollout. Restore the pinned prior bundle and backed-up customized routing/config as one compatible set; remove only proven newly installed owned files. Do not reset product specs, PRDs, decisions, or unrelated user content.
+6. Preserve historical telemetry. Do not reuse candidate receipts as proof for rolled-back code; run the applicable checks again on the restored state.
+7. Verify rollback through installer fixtures, effective overrides, skill discovery, and representative direct/exploratory cases. Rollback itself requires authorization in the target environment.
+
+## Risks, unresolved choices, and deferred work
+
+- **Broader router chooses the wrong mode:** requested-outcome precedence and negative cases; fall back to the current split if needed.
+- **Hidden stage behavior is lost:** explicit stage contracts, override preservation, and hook ownership before code changes.
+- **Tracking double counts or misattributes:** settle D5 schema in U3; retain historical compatibility.
+- **User-owned name collision or pre-manifest uncertainty:** stop/preserve/report; never infer ownership from an `aw-` prefix alone.
+- **Procedure body expands:** progressive references and the existing word-budget ratchet.
+- **Exact legacy command compatibility varies by runtime:** document supported behavior after testing, not a promised universal alias.
+- **Evaluation infrastructure is not yet present:** the test paths in this plan are proposed; U1 establishes the runner/method and records available runtime coverage.
+- **Release number is intentionally unset:** select at implementation/release time after checking current main.
+- **Install profiles remain deferred:** a smaller README menu is not a smaller registry. A true core profile needs dependency closure and a supported way to invoke non-discoverable procedures.
+- **Phase 2 is optional:** no requirement to merge shipping if mode safety or readability deteriorates.
 
 ## Handoff
 
-Implement with `aw-work docs/features/augmented-workflow/plan.md`.
+Execute authorized Phase 1, U1–U7, using `aw-spec` and retaining existing stage keys. U8 shipping implementation was separately approved; retain `commit`/`commit_push_pr` and all mode permissions. Publication and release remain separate decisions. Main was refreshed and matched the pinned baseline before implementation.
 
-Start with tests in `scripts/test-install.sh` that describe the migration pin behavior using local disposable repos. Then update `.scripts/aw-gate.js`, mirror it to `skills/aw-init/artifacts/aw-gate.js`, update docs/artifacts, and run the targeted pin checks before the full install test.
+## Sources and references
+
+All repository links below are pinned to the audited baseline. Paths proposed above are explicitly marked; they are not claimed to exist today.
+
+- [Current repository baseline](https://github.com/antonyjclements/augmented-workflow/tree/5fae68e9f7c1b397dd0721cfd4183cf9760c2900)
+- [Living workflow specification](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/docs/features/augmented-workflow/spec.md)
+- [Plan conventions and stable implementation units](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/skills/aw-plan/references/plan-template.md)
+- [Brainstorm's spec-writing contract](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/skills/aw-brainstorm/SKILL.md#L92-L137)
+- [Direct spec workflow and trace annotations](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/skills/aw-create-spec/SKILL.md#L20-L47)
+- [PRD source/lifecycle contracts](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/skills/aw-prd/SKILL.md)
+- [Configured stages and design hooks](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/docs/workflow/README.md#L517-L582)
+- [Current skill-to-stage tracking inference](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/.scripts/aw-gate.js#L698-L745)
+- [Installer ownership and copying](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/skills/aw-init/scripts/install.sh#L328-L495)
+- [Config migration and conflict handling](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/skills/aw-init/scripts/upgrade-config.rb)
+- [Installer mirrors, references, and word-budget checks](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/scripts/test-install.sh#L8-L144)
+- [Original discovery/direct-spec split](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/docs/decisions/2026-05-28-combine-brainstorm-and-spec-creation.md)
+- [Prior mode-routed consolidation](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/docs/decisions/2026-07-02-consolidate-skills-and-add-memory-loop.md)
+- [Current shipping modes and sequencing](https://github.com/antonyjclements/augmented-workflow/blob/5fae68e9f7c1b397dd0721cfd4183cf9760c2900/skills/aw-commit-push-pr/SKILL.md)

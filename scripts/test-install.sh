@@ -323,6 +323,9 @@ assert_repo_install() {
 
 validate_docs_indexes "$repo_root"
 
+# Migration safety has focused negative and rollback fixtures.
+python3 "$repo_root/test/installer/skill-migration.test.py"
+
 export HOME="$tmp_root/home"
 mkdir -p "$HOME"
 
@@ -369,6 +372,14 @@ assert_file "$aw_init_skills/aw-refresh/SKILL.md"
 assert_file "$aw_init_skills/aw-pin-behavior/SKILL.md"
 assert_file "$aw_init_learnings/index.yml"
 assert_file "$aw_init_skills/.augmented-workflow-skills"
+assert_file "$aw_init_skills/.augmented-workflow-skills.json"
+assert_file "$aw_init_skills/aw-spec/SKILL.md"
+assert_file "$aw_init_skills/aw-ship/SKILL.md"
+assert_not_path "$aw_init_skills/aw-brainstorm"
+assert_not_path "$aw_init_skills/aw-create-spec"
+assert_not_path "$aw_init_skills/aw-commit"
+assert_not_path "$aw_init_skills/aw-commit-push-pr"
+assert_equal "$(wc -l < "$aw_init_skills/.augmented-workflow-skills" | tr -d '[:space:]')" "20" "managed consolidated bundled skills"
 assert_symlink "$HOME/.claude/skills"
 assert_symlink "$HOME/.codeium/skills"
 assert_symlink "$HOME/.windsurf/skills"
@@ -385,7 +396,8 @@ printf '%s\n' 'aw-retired-workflow-skill' >> "$aw_init_skills/.augmented-workflo
   --force
 
 assert_file "$aw_init_skills/aw-user-skill/SKILL.md"
-assert_not_path "$aw_init_skills/aw-retired-workflow-skill"
+# A name-only manifest cannot prove that arbitrary or customized content is owned.
+assert_file "$aw_init_skills/aw-retired-workflow-skill/SKILL.md"
 assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-user-skill"
 assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-retired-workflow-skill"
 
@@ -400,10 +412,51 @@ rm "$aw_init_skills/.augmented-workflow-skills"
   --force
 
 assert_file "$aw_init_skills/aw-user-skill/SKILL.md"
-assert_not_path "$aw_init_skills/aw-import-prd"
+assert_file "$aw_init_skills/aw-import-prd/SKILL.md"
 assert_file "$aw_init_skills/.augmented-workflow-skills"
 assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-user-skill"
 assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-import-prd"
+
+# Installer dry-run is target-read-only, including repo, links and learnings.
+dry_target="$tmp_root/dry-run-target"
+dry_skills="$tmp_root/dry-run-skills"
+dry_learnings="$tmp_root/dry-run-learnings"
+"$repo_root/skills/aw-init/scripts/install.sh" --repo "$dry_target" \
+  --skills-dir "$dry_skills" --learnings-dir "$dry_learnings" --dry-run > "$tmp_root/skills-dry-run.log"
+assert_contains "$tmp_root/skills-dry-run.log" "Mode: dry-run"
+assert_contains "$tmp_root/skills-dry-run.log" "install: aw-spec"
+assert_contains "$tmp_root/skills-dry-run.log" "install: aw-ship"
+assert_not_path "$dry_target"
+assert_not_path "$dry_skills"
+assert_not_path "$dry_learnings"
+
+# --force may replace repo artifacts, but never bypass either new user-owned name.
+for protected_skill in aw-spec aw-ship; do
+  mkdir -p "$dry_skills/$protected_skill"
+  printf 'private provider\n' > "$dry_skills/$protected_skill/SKILL.md"
+  if "$repo_root/skills/aw-init/scripts/install.sh" --repo "$dry_target" \
+    --skills-dir "$dry_skills" --learnings-dir "$dry_learnings" --force > "$tmp_root/skill-collision.log" 2>&1; then
+    echo "user-owned $protected_skill collision should stop even with --force" >&2
+    exit 1
+  fi
+  assert_contains "$tmp_root/skill-collision.log" "collision: $protected_skill"
+  assert_contains "$dry_skills/$protected_skill/SKILL.md" "private provider"
+  assert_not_path "$dry_target"
+  assert_not_path "$dry_learnings"
+  rm -r "$dry_skills/$protected_skill"
+done
+
+# Customized repo routing and provider config are preserved without overwrite;
+# stale references are reported, not guessed to be bundled providers.
+printf 'custom AGENTS uses aw-brainstorm and aw-commit-push-pr\n' > "$aw_init_target/AGENTS.md"
+printf 'workflow:\n  steps:\n    brainstorm:\n      skill: custom-discovery\n    create_spec:\n      skill: custom-writer\n    commit:\n      skill: custom-local-commit\n    commit_push_pr:\n      skill: custom-publish\n' > "$aw_init_target/docs/workflow/config.yml"
+cp "$aw_init_target/AGENTS.md" "$tmp_root/custom-agents-before"
+cp "$aw_init_target/docs/workflow/config.yml" "$tmp_root/custom-config-before"
+"$repo_root/skills/aw-init/scripts/install.sh" --repo "$aw_init_target" \
+  --skills-dir "$aw_init_skills" --learnings-dir "$aw_init_learnings" </dev/null > "$tmp_root/preserved-routing.log"
+cmp "$tmp_root/custom-agents-before" "$aw_init_target/AGENTS.md"
+cmp "$tmp_root/custom-config-before" "$aw_init_target/docs/workflow/config.yml"
+assert_contains "$tmp_root/preserved-routing.log" "routing review required:"
 
 existing_standards_target="$tmp_root/existing-standards-target"
 mkdir -p "$existing_standards_target/docs/standards"
@@ -1416,6 +1469,39 @@ if ! ls "$migration_target"/docs/workflow/config.yml.bak-* >/dev/null 2>&1; then
   exit 1
 fi
 
+# Stage provider independence survives config migration, including ambiguous old
+# names. Dry-run reports them before an operator retires any bundled commands.
+spec_stage_target="$tmp_root/spec-stage-target"
+mkdir -p "$spec_stage_target/docs/workflow"
+cat > "$spec_stage_target/docs/workflow/config.yml" <<'YAML'
+workflow:
+  steps:
+    brainstorm:
+      skill: custom-discovery
+    create_spec:
+      skill: aw-create-spec
+    commit:
+      skill: custom-local-commit
+    commit_push_pr:
+      skill: aw-commit-push-pr
+YAML
+cp "$spec_stage_target/docs/workflow/config.yml" "$tmp_root/spec-stage-original.yml"
+ruby "$aw_init_skills/aw-init/scripts/upgrade-config.rb" --repo "$spec_stage_target" --dry-run > "$tmp_root/spec-stage-dry-run.log"
+cmp "$tmp_root/spec-stage-original.yml" "$spec_stage_target/docs/workflow/config.yml"
+assert_contains "$tmp_root/spec-stage-dry-run.log" "retired bundled name"
+assert_contains "$tmp_root/spec-stage-dry-run.log" "preserved independently"
+assert_contains "$tmp_root/spec-stage-dry-run.log" "choose aw-ship"
+ruby "$aw_init_skills/aw-init/scripts/upgrade-config.rb" --repo "$spec_stage_target" --apply > "$tmp_root/spec-stage-apply.log"
+assert_contains "$spec_stage_target/docs/workflow/config.yml" "skill: custom-discovery"
+assert_contains "$spec_stage_target/docs/workflow/config.yml" "skill: aw-create-spec"
+assert_contains "$spec_stage_target/docs/workflow/config.yml" "skill: custom-local-commit"
+assert_contains "$spec_stage_target/docs/workflow/config.yml" "skill: aw-commit-push-pr"
+# Reversible config migration restores its exact original (including formatting).
+spec_config_backup="$(sed -n 's/^Backup: //p' "$tmp_root/spec-stage-apply.log")"
+cmp "$tmp_root/spec-stage-original.yml" "$spec_config_backup"
+cp "$spec_config_backup" "$spec_stage_target/docs/workflow/config.yml"
+cmp "$tmp_root/spec-stage-original.yml" "$spec_stage_target/docs/workflow/config.yml"
+
 custom_ci_target="$tmp_root/custom-ci-target"
 mkdir -p "$custom_ci_target/docs/workflow"
 cat > "$custom_ci_target/docs/workflow/config.yml" <<'YAML'
@@ -1502,6 +1588,10 @@ remote_learnings="$tmp_root/remote-learnings"
 remote_bootstrap="$tmp_root/remote-bootstrap-skills"
 mkdir -p "$remote_bootstrap"
 cp -R "$repo_root/skills/aw-init" "$remote_bootstrap/aw-init"
+# The new bootstrap must use the downloaded helper/fingerprints, not stale local
+# copies. Running a released pre-Phase1 installer remains explicitly unsupported.
+printf 'import sys; sys.exit(97)\n' > "$remote_bootstrap/aw-init/scripts/migrate-skills.py"
+printf '{}\n' > "$remote_bootstrap/aw-init/scripts/bundled-skill-fingerprints.json"
 
 "$remote_bootstrap/aw-init/scripts/install.sh" \
   --source-url "$remote_archive" \
@@ -1517,5 +1607,24 @@ assert_file "$remote_skills/aw-refresh/SKILL.md"
 assert_file "$remote_skills/aw-check-workflow-compliance/SKILL.md"
 assert_file "$remote_skills/aw-init/scripts/upgrade-config.rb"
 assert_file "$remote_skills/aw-pin-behavior/SKILL.md"
+
+# New remote bootstrap collision checking must run before target mutation.
+remote_collision_skills="$tmp_root/remote-collision-skills"
+for protected_skill in aw-spec aw-ship; do
+  mkdir -p "$remote_collision_skills/$protected_skill"
+  printf 'private remote provider\n' > "$remote_collision_skills/$protected_skill/SKILL.md"
+  if "$remote_bootstrap/aw-init/scripts/install.sh" --source-url "$remote_archive" \
+    --repo "$tmp_root/remote-collision-repo" --skills-dir "$remote_collision_skills" \
+    --learnings-dir "$tmp_root/remote-collision-learnings" --force > "$tmp_root/remote-collision.log" 2>&1; then
+    echo "remote $protected_skill collision should stop before mutation" >&2
+    exit 1
+  fi
+  assert_contains "$tmp_root/remote-collision.log" "collision: $protected_skill"
+  assert_contains "$remote_collision_skills/$protected_skill/SKILL.md" "private remote provider"
+  assert_not_path "$remote_collision_skills/.augmented-workflow-skills"
+  assert_not_path "$tmp_root/remote-collision-repo"
+  assert_not_path "$tmp_root/remote-collision-learnings"
+  rm -r "$remote_collision_skills/$protected_skill"
+done
 
 echo "installer smoke test passed"

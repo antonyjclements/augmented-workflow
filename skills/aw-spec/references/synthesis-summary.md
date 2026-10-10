@@ -4,8 +4,8 @@ The synthesis is a scope checkpoint before writing the output artifact. It is no
 
 The output artifact can be:
 
-- a living spec in `docs/features/<feature>/spec.md` for normal software/product work
-- an ideation artifact when the user explicitly wants exploration instead of living intent
+- a living spec only when durable intent is requested/authorized and the router selects the create-spec stage
+- optional useful/requested ideation notes when the user wants exploration instead of living intent
 - no document for quick factual or single-step requests
 
 ---
@@ -84,9 +84,9 @@ If the same decision dimension is revised repeatedly and the conversation is cir
 
 ## Artifact Routing
 
-After confirmation:
+After confirmation, within the requested output boundary (exploration-only never authorizes a spec):
 
-- For living specs, write durable current intent with sections such as Intent, Users, Current Behavior, Key Flows, Acceptance Criteria, Boundaries and Non-Goals, Open Questions / TODOs, and Decision Links.
+- For living specs, return clarified context to the router for the independently configured create-spec provider or shared `spec-writing.md` reference. Do not write a separate spec here.
 - For authored PRDs, route to `aw-prd`.
 - For ideation artifacts, write problem, actors, goals, key flows, acceptance examples, boundaries, success criteria, constraints, open questions, and PRD/spec handoff.
 - Preserve unresolved product ambiguity as explicit open questions; do not turn assumptions into hidden decisions.

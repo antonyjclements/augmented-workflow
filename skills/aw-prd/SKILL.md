@@ -6,9 +6,19 @@ argument-hint: "[create|import] [idea, notes, file path, URL, or pasted content]
 
 # PRD
 
-First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-prd` (silent no-op otherwise).
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-prd`
+(silent no-op otherwise). For an internal `prd` stage with inherited mode,
+invocation ID, and tracking ownership from `aw-spec`, suppress that public call:
+emit `node .scripts/aw-gate.js track aw-prd --stage prd --mode <direct|exploratory> --event stage --invocation-id <token>`
+only if this provider owns tracking and the caller verified `tracking-schema` 2;
+if the caller already emitted it or reported unsupported tracking, do not emit.
+Never fall back to a public event for an internal call. Reuse the token and mode.
 
 Create or import a product requirements document and store it under `docs/product/prds/`.
+Honor the requested output: create/import-only produces no spec, plan, prototype,
+or implementation. When invoked by `aw-spec` to preserve input for an explicitly
+requested spec, return the PRD path and intake evidence to that same route; do not
+start a second spec-writing invocation.
 
 ## Mode Routing
 
@@ -56,7 +66,7 @@ When using a template: preserve section order; omit sections only when explicitl
 4. Clarify blocking product gaps one question at a time. Preserve non-blocking uncertainty as open questions.
 5. Create or update the PRD in `docs/product/prds/YYYY-MM-DD-<slug>.md` with `status: draft`.
 6. Update `docs/product/prds/index.yml` without disrupting its existing schema.
-7. If `workflow.design.enabled` is true and `workflow.design.hooks.prd_review.skill` is non-empty, invoke that design hook with the PRD path before recommending the next step.
+7. Run the applicable `prd_review` checkpoint described below before recommending the next step.
 8. Recommend the next step.
 
 ### Rules
@@ -74,25 +84,38 @@ Persist external product input as a historical source artifact.
 
 ### Workflow
 
-1. Resolve the source:
+1. Search the PRD index and source provenance before importing. Reuse an existing imported artifact when its source and stored version match the intended input; do not duplicate an import or infer identity from its filename alone. A supplied imported path uses its stored contents without refetching the original unless the user requested an update. Do not conflate newly supplied changed content with an older import from the same source.
+2. Resolve any source still needed:
    - Pasted content: use it directly
    - Local file: read it
-   - URL or Google Doc: use available browser/document tools; ask for accessible export if blocked
-2. Preserve source provenance: URL/path, import date, author/source when known.
-3. Convert to clean markdown without changing meaning.
-4. Create `docs/product/prds/YYYY-MM-DD-<slug>.md` with `status: imported`.
-5. Update `docs/product/prds/index.yml`, preserving its schema where practical.
-6. If `workflow.design.enabled` is true and `workflow.design.hooks.prd_review.skill` is non-empty, invoke that design hook with the PRD path before handing off to brainstorming or spec creation.
+   - URL or Google Doc: use available browser/document tools
+   If the requested source is unavailable and no accessible intended import exists, report the blocker and ask for an accessible export; never reconstruct it from a title.
+3. For a new import, preserve source provenance: URL/path, import date, author/source when known.
+4. Convert to clean markdown without changing meaning.
+5. Create `docs/product/prds/YYYY-MM-DD-<slug>.md` with `status: imported`, or retain the reused source artifact unchanged.
+6. Update `docs/product/prds/index.yml` only as needed, preserving its existing schema and unrelated entries.
+7. Run the applicable `prd_review` checkpoint described below before returning to the caller or recommending `aw-spec`.
 
 ### Rules
 
 - Preserve the PRD as input, including ambiguity and open questions.
 - Do not rewrite the imported PRD into living truth — that belongs in the spec.
-- After a spec is created from the PRD, only update frontmatter lifecycle metadata (`status: promoted`, `promoted_to`). Do not rewrite the PRD body.
+- After a spec is created from the PRD, only update frontmatter/index lifecycle metadata (`status: promoted`, `promoted: YYYY-MM-DD`, `promoted_to`). Keep the PRD body unchanged.
 - Do not remove imported PRDs just because they were promoted. Removal requires `status: archived` and cleanup through `aw-refresh cleanup`.
 - Avoid storing secrets, customer-private data, or credentials; redact only when necessary.
 
 ---
+
+## PRD Review Checkpoint
+
+If `workflow.design.enabled` is true and `workflow.design.hooks.prd_review.skill`
+is non-empty, run that hook after source preservation and before discovery/spec
+creation. Reuse current evidence for an unchanged existing artifact; otherwise
+run the missing hook once or report its blocker. Return the hook/provider, PRD
+path, artifact version/hash or inspected state, outcome/findings, and unresolved
+blockers. Do not infer review from a file's existence. This checkpoint never runs
+`discovery` or `spec_review`; the corresponding stages own those hooks. PRD
+import-only runs no spec hook and never automatically promotes intent.
 
 ## Default Formats
 
@@ -128,4 +151,4 @@ prds:
 
 ## Output
 
-Report: PRD path · template used (create mode) · source provenance (import mode) · index updated · recommended next step: `aw-brainstorm <prd path>` when scope/trade-offs need clarification, or `aw-create-spec <prd path>` when ready to draft a living spec.
+Report: PRD path · template used (create mode) · source provenance/reused import (import mode) · index changes · PRD-review evidence or skips/blockers. When spec promotion is requested, hand off to `aw-spec <prd path>`: exploratory for consequential scope/trade-off ambiguity, direct for clear intent. Otherwise recommend that next step without starting it.

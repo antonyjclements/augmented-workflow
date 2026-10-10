@@ -75,7 +75,7 @@ Spec Kit also does not define how to handle bugs, refactors, or non-feature work
 
 **When to combine Spec Kit with Augmented Workflow**
 
-Augmented Workflow covers the same spec-to-code pipeline — `aw-brainstorm → aw-create-spec → aw-plan → aw-work` — and adds the compounding knowledge layer that Spec Kit lacks. For most teams, Augmented Workflow is the more complete choice.
+Augmented Workflow covers the same spec-to-code pipeline — `aw-spec → aw-plan → aw-work` — and adds the compounding knowledge layer that Spec Kit lacks. For most teams, Augmented Workflow is the more complete choice.
 
 If a team is already committed to Spec Kit's constitution-driven uniformity approach, the two are not mutually exclusive: use Spec Kit for the specify → plan → implement pipeline and Augmented Workflow's capture and synthesis skills to build institutional memory alongside it.
 

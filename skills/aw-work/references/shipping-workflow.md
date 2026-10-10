@@ -50,7 +50,7 @@ This file contains the shipping workflow (Phase 3-4). It is loaded when all Phas
    Options (four or fewer, self-contained labels):
    - `Apply/fix now` — loop back into review with focused fixes; the agent investigates each finding, applies changes where safe, and re-runs review.
    - `File tickets via project tracker` — load `references/tracker-defer.md` in Interactive mode; the agent files tickets in the project's detected tracker (or `gh` fallback, or leaves them in the report if no sink exists) and proceeds to Final Validation.
-   - `Accept and proceed` — record the residual findings verbatim in a durable "Known Residuals" sink before shipping. If a PR will be created or updated in Phase 4, include them in the PR description's "Known Residuals" section (the agent owns this when calling `aw-commit-push-pr`). If the user later chooses the no-PR `aw-commit` path, create `docs/residual-review-findings/<branch-or-head-sha>.md`, include the accepted findings and source review-run context, stage it with the implementation commit, and mention the file path in the final summary. The user has acknowledged the risk, but the findings must not live only in the transient session.
+   - `Accept and proceed` — record the residual findings verbatim in a durable "Known Residuals" sink before shipping. If a PR will be created or updated in Phase 4, include them in the PR description's "Known Residuals" section (the agent owns this when calling `aw-ship full-pr`). If the user later chooses the no-PR `aw-ship local-commit` path, create `docs/residual-review-findings/<branch-or-head-sha>.md`, include the accepted findings and source review-run context, stage it with the implementation commit, and mention the file path in the final summary. The user has acknowledged the risk, but the findings must not live only in the transient session.
    - `Stop — do not ship` — abort the shipping workflow. The user will handle findings manually before re-invoking.
 
    Skip this gate entirely when the review reported `Residual actionable work: none.` or when only Tier 1 was used. Do not proceed past this gate on an `Accept and proceed` decision until the agent has recorded whether the durable sink is `PR Known Residuals` or `docs/residual-review-findings/<branch-or-head-sha>.md`.
@@ -77,9 +77,13 @@ This file contains the shipping workflow (Phase 3-4). It is loaded when all Phas
 
 ## Phase 4: Ship It
 
+Proceed with publication only when explicitly authorized by the user. Completing
+implementation or a plan does not authorize commits, push, or PR creation. Without
+that authority, report ship readiness and stop before Phase 4 mutations.
+
 1. **Prepare Evidence Context**
 
-   Note whether the completed work has observable behavior (UI rendering, CLI output, API/library behavior with a runnable example, generated artifacts, or workflow output). The `aw-commit-push-pr` skill will ask whether to capture evidence only when evidence is possible.
+   Note whether the completed work has observable behavior (UI rendering, CLI output, API/library behavior with a runnable example, generated artifacts, or workflow output). The `aw-ship full-pr` skill will ask whether to capture evidence only when evidence is possible.
 
 2. **Update Plan Status**
 
@@ -90,17 +94,17 @@ This file contains the shipping workflow (Phase 3-4). It is loaded when all Phas
 
 3. **Commit and Create Pull Request**
 
-   Load the `aw-commit-push-pr` skill to handle committing, pushing, and PR creation. The skill handles convention detection, branch safety, logical commit splitting, adaptive PR descriptions, and attribution badges.
+   Resolve `workflow.steps.commit_push_pr.skill`, default `aw-ship full-pr`, for authorized committing, pushing, and PR creation. Pass mode and authority boundaries to the effective provider. The bundled route handles convention detection, branch safety, logical commit splitting, adaptive PR descriptions, and attribution badges; its nested commit stage independently honors `workflow.steps.commit.skill`. A verified bundled self-reference enters the selected stage without recursion.
 
    When providing context for the PR description, include:
    - The plan's summary and key decisions
    - Testing notes (tests added/modified, manual testing performed)
-   - Evidence context from step 1, so `aw-commit-push-pr` can decide whether to ask about capturing evidence
+   - Evidence context from step 1, so `aw-ship full-pr` can decide whether to ask about capturing evidence
    - Figma design link (if applicable)
    - The Post-Deploy Monitoring & Validation section (see Phase 3 Step 6)
    - Any "Known Residuals" accepted in the Phase 3 Residual Work Gate, rendered as a dedicated section in the PR body with severity, file:line, and title per finding
 
-   If the user prefers to commit without creating a PR, load the `aw-commit` skill instead.
+   If the user requests a local-only commit, use the effective `workflow.steps.commit.skill`, default `aw-ship local-commit`, instead. It must never push or open a PR. Description-only and description-update requests do not enter this shipping workflow.
 
 4. **Notify User**
    - Summarize what was completed
@@ -118,7 +122,7 @@ Before creating PR, verify:
 - [ ] Linting passes (use linting-agent)
 - [ ] Code follows existing patterns
 - [ ] Figma designs match implementation (if applicable)
-- [ ] Evidence decision handled by `aw-commit-push-pr` when the change has observable behavior
+- [ ] Evidence decision handled by `aw-ship full-pr` when the change has observable behavior
 - [ ] Commit messages follow conventional format
 - [ ] PR description includes Post-Deploy Monitoring & Validation section (or explicit no-impact rationale)
 - [ ] Code review completed (Tier 1 harness-native or Tier 2 `aw-review`)

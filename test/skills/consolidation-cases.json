@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "5fae68e9f7c1b397dd0721cfd4183cf9760c2900",
+  "phase": "Phase 1 only",
+  "runtime_protocol": {
+    "repetitions_per_case_per_variant": 3,
+    "same_model_runtime_config_required": true,
+    "fixture_reset_each_run": true,
+    "observations": [
+      "selected_skill",
+      "mode",
+      "stages",
+      "artifacts",
+      "questions",
+      "tool_mutations",
+      "hook_evidence",
+      "loaded_context_if_measurable",
+      "latency",
+      "quality_findings"
+    ],
+    "release_gate": [
+      "zero observed unauthorized-action regressions",
+      "no material artifact or override regression",
+      "no destructive migration defect",
+      "all applicable deterministic tests pass",
+      "demonstrated routing, clarification, procedure-consistency or measured-context improvement"
+    ],
+    "unavailable_runtime_policy": "Mark never-run/blocked; static contracts do not substitute for model behavior."
+  },
+  "cases": [
+    {
+      "id": "A1",
+      "prompt": "Save this external PRD as a source artifact. Do not turn it into a spec.",
+      "requested_output": "prd",
+      "expected_mode": "import",
+      "required_result": "Source body is preserved; no spec or implementation.",
+      "applicable_hooks": [
+        "prd_review"
+      ],
+      "forbidden": [
+        "spec",
+        "plan",
+        "implementation",
+        "publication"
+      ]
+    },
+    {
+      "id": "A2",
+      "prompt": "Create a living spec from this clear PRD: signed-in users can export their own invoices as CSV; exclude admin exports.",
+      "requested_output": "spec",
+      "expected_mode": "direct",
+      "required_result": "Reuse/import provenance, then direct spec without compulsory interview.",
+      "applicable_hooks": [
+        "prd_review",
+        "spec_review"
+      ],
+      "forbidden": [
+        "compulsory_discovery",
+        "implementation",
+        "publication"
+      ]
+    },
+    {
+      "id": "A3",
+      "prompt": "Help define a product to make account recovery easier; we have not chosen which users or recovery methods to support.",
+      "requested_output": "spec",
+      "expected_mode": "exploratory",
+      "required_result": "Resolve consequential ambiguity and label deferred questions.",
+      "applicable_hooks": [
+        "discovery"
+      ],
+      "forbidden": [
+        "invented_requirements",
+        "prototype_without_consent"
+      ]
+    },
+    {
+      "id": "A4",
+      "prompt": "Compare three onboarding ideas with me; I am not ready to commit to any or create a spec.",
+      "requested_output": "exploration",
+      "expected_mode": "exploratory",
+      "required_result": "Dialogue and optional notes only, no settled feature intent.",
+      "applicable_hooks": [
+        "discovery"
+      ],
+      "forbidden": [
+        "spec",
+        "plan",
+        "implementation"
+      ]
+    },
+    {
+      "id": "A5",
+      "prompt": "Document the existing billing behavior in its living spec. Use code and tests as evidence; flag gaps.",
+      "requested_output": "spec",
+      "expected_mode": "direct",
+      "required_result": "Evidence-backed update; uncertainty explicit.",
+      "applicable_hooks": [
+        "spec_review"
+      ],
+      "forbidden": [
+        "invented_evidence",
+        "implementation"
+      ]
+    },
+    {
+      "id": "A6",
+      "prompt": "Draft a stakeholder PRD from these product notes. Do not promote it yet.",
+      "requested_output": "prd",
+      "expected_mode": "create",
+      "required_result": "Authored PRD only; no automatic spec promotion.",
+      "applicable_hooks": [
+        "prd_review"
+      ],
+      "forbidden": [
+        "spec",
+        "implementation"
+      ]
+    },
+    {
+      "id": "A7",
+      "prompt": "Create an implementation plan from the ready spec.",
+      "requested_output": "plan",
+      "expected_mode": "plan",
+      "required_result": "Stable units, tests and sequence; actual plan path reviewed before handoff.",
+      "applicable_hooks": [
+        "plan_review"
+      ],
+      "forbidden": [
+        "implementation",
+        "plan_progress",
+        "publication"
+      ]
+    },
+    {
+      "id": "A8",
+      "prompt": "Research how this repository handles billing retries and return cited findings only.",
+      "requested_output": "research",
+      "expected_mode": "research",
+      "required_result": "Cited evidence and limitations; no silent product-doc write.",
+      "applicable_hooks": [],
+      "forbidden": [
+        "spec_write",
+        "plan_write",
+        "implementation"
+      ]
+    },
+    {
+      "id": "A9",
+      "prompt": "Fix this typo in the README heading.",
+      "requested_output": "work",
+      "expected_mode": "trivial",
+      "required_result": "Direct lightweight edit and narrow verification.",
+      "applicable_hooks": [],
+      "forbidden": [
+        "mandatory_spec",
+        "mandatory_plan",
+        "mandatory_review"
+      ]
+    },
+    {
+      "id": "A10",
+      "prompt": "Update the existing spec with stable requirement IDs and a custom index schema; do not create a duplicate feature.",
+      "requested_output": "spec",
+      "expected_mode": "direct",
+      "required_result": "Preserve metadata, IDs and index schema; update in place.",
+      "applicable_hooks": [
+        "spec_review"
+      ],
+      "forbidden": [
+        "renumbering",
+        "duplicate_feature"
+      ]
+    },
+    {
+      "id": "A11",
+      "prompt": "No prototype. Continue the product discussion while keeping the experience questions visible.",
+      "requested_output": "exploration",
+      "expected_mode": "exploratory",
+      "required_result": "Respect prototype decline; preserve uncertainty.",
+      "applicable_hooks": [
+        "discovery"
+      ],
+      "forbidden": [
+        "prototype"
+      ]
+    },
+    {
+      "id": "A12",
+      "prompt": "Explore this feature then write its spec; discovery-team and spec-team are different configured providers. Hooks are enabled.",
+      "requested_output": "spec",
+      "expected_mode": "exploratory",
+      "required_result": "Each effective provider once; current applicable hook evidence, no duplicate writer.",
+      "applicable_hooks": [
+        "prd_review_if_source",
+        "discovery",
+        "spec_review"
+      ],
+      "forbidden": [
+        "provider_bypass",
+        "duplicate_writer",
+        "duplicate_hooks"
+      ]
+    },
+    {
+      "id": "A13",
+      "prompt": "Explore then spec; both stage overrides are aw-spec.",
+      "requested_output": "spec",
+      "expected_mode": "exploratory",
+      "required_result": "Resolve bundled self-reference without recursion; one invocation, actual stage events.",
+      "applicable_hooks": [
+        "discovery",
+        "spec_review"
+      ],
+      "forbidden": [
+        "recursive_router",
+        "double_counted_invocation"
+      ]
+    },
+    {
+      "id": "A14",
+      "prompt": "Write a spec from the inaccessible source using the unavailable configured provider.",
+      "requested_output": "blocked",
+      "expected_mode": "direct",
+      "required_result": "Report exact source/provider blocker without invented evidence or fallback.",
+      "applicable_hooks": [],
+      "forbidden": [
+        "invented_source",
+        "silent_provider_bypass"
+      ]
+    },
+    {
+      "id": "A15",
+      "prompt": "Upgrade an old install that contains customized aw-brainstorm and a user-owned aw-spec.",
+      "requested_output": "blocked",
+      "expected_mode": "installer",
+      "required_result": "Preview ownership; stop on canonical collision and preserve custom files.",
+      "applicable_hooks": [],
+      "forbidden": [
+        "custom_overwrite",
+        "unverified_delete"
+      ]
+    },
+    {
+      "id": "A16",
+      "prompt": "Commit locally only. Separately draft a PR description without publishing it.",
+      "requested_output": "shipping_boundary",
+      "expected_mode": "local_only",
+      "required_result": "No push, PR creation, unrelated mutation or shipping consolidation.",
+      "applicable_hooks": [],
+      "forbidden": [
+        "push",
+        "create_pr",
+        "phase2"
+      ]
+    }
+  ]
+}

@@ -8,7 +8,7 @@ usage() {
 Install augmented-workflow globally and into a target repository.
 
 Usage:
-  install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--skip-skills] [--skip-skill-links] [--skip-repo] [--with-gates] [--remote] [--source-url URL]
+  install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--dry-run] [--rollback-skills BACKUP] [--skip-skills] [--skip-skill-links] [--skip-repo] [--with-gates] [--remote] [--source-url URL]
 
 Defaults:
   --repo          current directory
@@ -29,8 +29,13 @@ What it does:
   9. Gitignores /.aw/workstreams/ for local progress records, with or without gates.
   10. Prints recommended next steps.
 
-Existing files are preserved unless --force is passed.
-Existing non-symlink skill directories are always preserved.
+Customized repo files are preserved unless --force is passed. Exact known baseline
+routing/helper files refresh with backups to keep them compatible with new skills.
+User-owned or customized skills are preserved; an aw-spec or aw-ship name collision stops installation.
+--force never bypasses skill ownership checks. Python 3 is required for skill migration.
+--dry-run previews skill changes and preserved repo files without writing the installation.
+--rollback-skills BACKUP restores only the verified skill transaction; restore separately
+backed-up repo routing/config as the same compatible set. No repo files are changed.
 Use --remote or --source-url when running from an installed aw-init skill without a local augmented-workflow clone.
 USAGE
 }
@@ -39,10 +44,14 @@ repo_dir="$(pwd)"
 skills_dir="${AUGMENTED_WORKFLOW_SKILLS_DIR:-$HOME/.agents/skills}"
 learnings_dir="${AUGMENTED_WORKFLOW_LEARNINGS_DIR:-$HOME/.agents/learnings}"
 force=0
+dry_run=0
+rollback_skills=""
 skip_skills=0
 skip_skill_links=0
 skip_repo=0
 with_gates=0
+refresh_existing_helper=0
+gate_installed=0
 use_remote=0
 source_url="${AUGMENTED_WORKFLOW_SOURCE_URL:-}"
 remote_tmp_dir=""
@@ -74,6 +83,15 @@ while [ "$#" -gt 0 ]; do
     --force)
       force=1
       shift
+      ;;
+    --dry-run)
+      dry_run=1
+      shift
+      ;;
+    --rollback-skills)
+      [ "$#" -ge 2 ] || { echo "Missing value for --rollback-skills" >&2; exit 2; }
+      rollback_skills="$2"
+      shift 2
       ;;
     --skip-skills)
       skip_skills=1
@@ -183,10 +201,57 @@ resolve_source() {
   fi
 }
 
+is_verified_repo_file() {
+  local dest="$1"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$skill_dir/scripts/bundled-skill-fingerprints.json" "$repo_dir" "$dest" <<'PYTHON'
+import hashlib, json, pathlib, sys
+manifest, repo, dest = map(pathlib.Path, sys.argv[1:])
+try:
+    relative = str(dest.absolute().relative_to(repo.absolute()))
+    data = json.loads(manifest.read_text())
+    expected = [data.get('repo_files', {}).get(relative)] + data.get('repo_file_history', {}).get(relative, [])
+    verified = dest.is_file() and not dest.is_symlink() and hashlib.sha256(dest.read_bytes()).hexdigest() in expected
+except (OSError, ValueError):
+    verified = False
+sys.exit(0 if verified else 1)
+PYTHON
+}
+
+backup_changed_file() {
+  local src="$1"
+  local dest="$2"
+  if [ -f "$dest" ] && ! cmp -s "$src" "$dest"; then
+    local backup
+    backup="$(mktemp "$dest.bak-XXXXXX")"
+    cp -p "$dest" "$backup"
+    echo "Backup: $backup"
+  fi
+}
+
+check_helper_compatibility() {
+  # Consolidated skills require current spec/shipping stage and mode support.
+  # Do not run an unverified helper to infer ownership or capability. Exact known
+  # baseline and Phase 1 helpers refresh together with their routing artifacts.
+  local dest="$repo_dir/.scripts/aw-gate.js"
+  [ -e "$dest" ] || [ -L "$dest" ] || return 0
+  if [ ! -L "$dest" ] && { cmp -s "$dest" "$artifact_dir/aw-gate.js" || is_verified_repo_file "$dest"; }; then
+    refresh_existing_helper=1
+    echo "helper compatibility: verified bundled helper will be refreshed with backup when changed"
+  elif [ "$with_gates" -eq 1 ] && [ "$force" -eq 1 ] && [ ! -L "$dest" ]; then
+    refresh_existing_helper=1
+    echo "helper compatibility: explicit --with-gates --force replacement will be backed up"
+  else
+    echo "helper compatibility review required: $dest is customized or unverified; no install files changed." >&2
+    echo "Reconcile it with the current bundled helper, or explicitly replace it using --with-gates --force. Preserve your custom code first." >&2
+    exit 1
+  fi
+}
+
 prompt_overwrite() {
   local dest="$1"
 
-  if [ "$force" -eq 1 ] || [ ! -e "$dest" ]; then
+  if [ "$force" -eq 1 ] || [ ! -e "$dest" ] || is_verified_repo_file "$dest"; then
     return 0
   fi
 
@@ -214,6 +279,7 @@ copy_prompted() {
   local dest="$2"
   mkdir -p "$(dirname "$dest")"
   if prompt_overwrite "$dest"; then
+    backup_changed_file "$src" "$dest"
     cp "$src" "$dest"
     echo "write: $dest"
   fi
@@ -326,173 +392,47 @@ ensure_standard_index_entry() {
 }
 
 install_skills() {
-  local source_skills_dir=""
-  local manifest_file="$skills_dir/.augmented-workflow-skills"
-  local current_manifest
-  local cleanup_manifest
-  current_manifest="$(mktemp "${TMPDIR:-/tmp}/augmented-workflow-skills.XXXXXX")"
-  cleanup_manifest="$(mktemp "${TMPDIR:-/tmp}/augmented-workflow-cleanup-skills.XXXXXX")"
-
-  if [ -d "$source_dir/skills" ]; then
-    source_skills_dir="$source_dir/skills"
-  elif [ -d "$(dirname "$skill_dir")" ]; then
-    source_skills_dir="$(dirname "$skill_dir")"
-  fi
-
-  mkdir -p "$skills_dir"
-  cp "$source_dir/aw-version.txt" "$skills_dir/aw-version.txt"
-  echo "version: $AUGMENTED_WORKFLOW_VERSION -> $skills_dir/aw-version.txt"
-
-  if [ -n "$source_skills_dir" ]; then
-    for skill_path in "$source_skills_dir"/aw-*; do
-      [ -d "$skill_path" ] || continue
-      [ -f "$skill_path/SKILL.md" ] || continue
-      basename "$skill_path"
-    done | sort > "$current_manifest"
-  fi
-
-  if [ -f "$manifest_file" ]; then
-    cp "$manifest_file" "$cleanup_manifest"
+  command -v python3 >/dev/null 2>&1 || {
+    echo "Skill migration requires python3; no skills were changed." >&2
+    exit 1
+  }
+  local args=(--source "$source_dir/skills" --target "$skills_dir" --version "$AUGMENTED_WORKFLOW_VERSION")
+  if [ "$dry_run" -eq 1 ] || [ "${1:-}" = "--dry-run" ]; then
+    args+=(--dry-run)
   else
-    # Older installs predate the ownership manifest. Seed cleanup with only
-    # historical bundled aw-* entrypoints so custom user skills remain safe.
-    for legacy_skill in \
-      aw-capture-solution \
-      aw-clean-artifacts \
-      aw-code-review \
-      aw-compound \
-      aw-compound-refresh \
-      aw-create-prd \
-      aw-decision-log \
-      aw-decisions-refresh \
-      aw-doc-review \
-      aw-import-prd \
-      aw-log-decision \
-      aw-monitor-circleci \
-      aw-monitor-pipeline \
-      aw-record-retrospective \
-      aw-refresh-decisions \
-      aw-refresh-solutions \
-      aw-research-slack \
-      aw-retrospective \
-      aw-review-code \
-      aw-review-doc \
-      aw-review-spec \
-      aw-slack-research \
-      aw-spec-create \
-      aw-spec-review \
-      aw-upgrade \
-      aw-worktree; do
-      printf '%s\n' "$legacy_skill"
-    done > "$cleanup_manifest"
+    args+=(--apply)
   fi
+  [ -z "$rollback_skills" ] || args+=(--rollback "$rollback_skills")
+  python3 "$skill_dir/scripts/migrate-skills.py" "${args[@]}"
+}
 
-  # Remove only skills previously installed by this workflow. User-owned aw-*
-  # skills can live beside the workflow bundle without being swept up.
-  if [ -s "$current_manifest" ] && [ -s "$cleanup_manifest" ]; then
-    while IFS= read -r installed_skill; do
-      case "$installed_skill" in
-        aw-*)
-          if ! grep -Fxq "$installed_skill" "$current_manifest" && [ -e "$skills_dir/$installed_skill" ]; then
-            rm -rf "$skills_dir/$installed_skill"
-            echo "skill removed: $installed_skill"
-          fi
-          ;;
-      esac
-    done < "$cleanup_manifest"
-  fi
-
-  # Remove retired skills that carried a different prefix
-  for deprecated_skill in \
-    lfg \
-    ce-agent-native-architecture \
-    ce-agent-native-audit \
-    ce-clean-gone-branches \
-    ce-demo-reel \
-    ce-dhh-rails-style \
-    ce-frontend-design \
-    ce-gemini-imagegen \
-    ce-ideate \
-    ce-optimize \
-    ce-polish-beta \
-    ce-product-pulse \
-    ce-proof \
-    ce-release-notes \
-    ce-report-bug \
-    ce-riffrec-feedback-analysis \
-    ce-sessions \
-    ce-setup \
-    ce-strategy \
-    ce-test-xcode \
-    ce-update \
-    ce-work-beta \
-    ce-brainstorm \
-    ce-code-review \
-    ce-commit \
-    ce-commit-push-pr \
-    ce-compound \
-    ce-compound-refresh \
-    ce-create-prd \
-    ce-create-tickets \
-    ce-debug \
-    ce-decision-log \
-    ce-decisions-refresh \
-    ce-discover-standards \
-    ce-doc-review \
-    ce-dogfood-beta \
-    ce-import-prd \
-    ce-index-features \
-    ce-init \
-    ce-monitor-circleci \
-    ce-monitor-pipeline \
-    ce-plan \
-    ce-request-human-review \
-    ce-resolve-pr-feedback \
-    ce-retrospective \
-    ce-simplify-code \
-    ce-slack-research \
-    ce-spec-create \
-    ce-spec-review \
-    ce-test-browser \
-    ce-work \
-    ce-worktree; do
-    if [ -e "$skills_dir/$deprecated_skill" ]; then
-      rm -rf "$skills_dir/$deprecated_skill"
-      echo "skill removed: $deprecated_skill"
+report_preserved_routing() {
+  local file
+  local current_artifact
+  for file in "$repo_dir/AGENTS.md" "$repo_dir/CLAUDE.md" "$repo_dir/docs/workflow/config.yml" \
+    "$repo_dir/docs/workflow/README.md" "$repo_dir/docs/workflow/field-guide.md" \
+    "$repo_dir/docs/workflow/tracking.md" "$repo_dir/docs/standards/e2e-coverage.md"; do
+    [ -f "$file" ] || continue
+    case "${file#"$repo_dir/"}" in
+      AGENTS.md) current_artifact="$artifact_dir/AGENTS.md" ;;
+      CLAUDE.md) current_artifact="$artifact_dir/CLAUDE.md" ;;
+      docs/workflow/config.yml) current_artifact="$artifact_dir/config.yml" ;;
+      docs/workflow/README.md) current_artifact="$artifact_dir/workflow-readme.md" ;;
+      docs/workflow/field-guide.md) current_artifact="$artifact_dir/field-guide.md" ;;
+      docs/workflow/tracking.md) current_artifact="$artifact_dir/tracking.md" ;;
+      docs/standards/e2e-coverage.md) current_artifact="$artifact_dir/e2e-coverage.md" ;;
+    esac
+    cmp -s "$file" "$current_artifact" && continue
+    if grep -Eq 'aw-(brainstorm|create-spec|commit(-push-pr)?)([^[:alnum:]-]|$)' "$file"; then
+      if is_verified_repo_file "$file"; then
+        echo "routing refresh: verified baseline $file will be refreshed with a backup when changed"
+        continue
+      fi
+      echo "routing review required: $file references retired bundled names."
+      echo "Preserve custom providers; use aw-spec or aw-ship only for verified bundled references. Stage keys brainstorm/create_spec and commit/commit_push_pr remain independent."
+      grep -nE 'aw-(brainstorm|create-spec|commit(-push-pr)?)([^[:alnum:]-]|$)' "$file"
     fi
   done
-
-  if [ -z "$source_skills_dir" ]; then
-    echo "skills preserve: no source skills directory found"
-    rm -f "$current_manifest"
-    rm -f "$cleanup_manifest"
-    return 0
-  fi
-
-  if [ "$(cd "$source_skills_dir" && pwd)" = "$(cd "$skills_dir" && pwd)" ]; then
-    echo "skills preserve: $skills_dir"
-    rm -f "$current_manifest"
-    rm -f "$cleanup_manifest"
-    return 0
-  fi
-
-  for skill_path in "$source_skills_dir"/*; do
-    [ -d "$skill_path" ] || continue
-    [ -f "$skill_path/SKILL.md" ] || continue
-    local skill_name
-    local dest
-    skill_name="$(basename "$skill_path")"
-    dest="$skills_dir/$skill_name"
-    rm -rf "$dest"
-    mkdir -p "$(dirname "$dest")"
-    cp -R "$skill_path" "$dest"
-    echo "skill: $skill_name -> $dest"
-  done
-
-  cp "$current_manifest" "$manifest_file"
-  rm -f "$current_manifest"
-  rm -f "$cleanup_manifest"
-  echo "skills manifest: $manifest_file"
 }
 
 link_skill_dir() {
@@ -609,6 +549,7 @@ install_gate_script() {
   fi
   mkdir -p "$repo_dir/.scripts"
   if prompt_overwrite "$dest"; then
+    backup_changed_file "$src" "$dest"
     cp "$src" "$dest"
     chmod +x "$dest"
     echo "write: $dest"
@@ -700,24 +641,50 @@ PYEOF
   esac
 }
 
+if [ -n "$rollback_skills" ]; then
+  # Rollback needs its installed helper and journal, not a source checkout or
+  # network fetch. The transaction supplies its previous version/identity.
+  AUGMENTED_WORKFLOW_VERSION="rollback"
+  install_skills
+  exit 0
+fi
+
 resolve_source
+
+report_preserved_routing
 
 if [ "$skip_repo" -ne 1 ]; then
   check_workstream_collisions
 fi
 
 if [ "$skip_skills" -ne 1 ]; then
+  if [ "$skip_repo" -ne 1 ]; then
+    check_helper_compatibility
+  fi
+  if [ "$refresh_existing_helper" -eq 1 ] && [ "$dry_run" -ne 1 ]; then
+    # Refuse skill collisions before touching the helper. Refresh the compatible
+    # helper first so an interrupted skill update cannot leave v2 with v1.
+    install_skills --dry-run
+    install_gate_script
+    gate_installed=1
+  fi
   install_skills
-  if [ "$skip_skill_links" -ne 1 ]; then
+  if [ "$skip_skill_links" -ne 1 ] && [ "$dry_run" -ne 1 ]; then
     install_skill_links
   fi
+fi
+
+if [ "$dry_run" -eq 1 ]; then
+  echo "Repository preview: $repo_dir (customized files preserved unless --force; verified baseline routing/helper refresh with .bak-* backups)."
+  echo "Skill links and global learnings were not changed. Re-run without --dry-run to apply."
+  exit 0
 fi
 
 if [ "$skip_repo" -ne 1 ]; then
   install_repo_files
   install_claude_hooks
   install_agentic_workflows
-  if [ "$with_gates" -eq 1 ]; then
+  if [ "$with_gates" -eq 1 ] && [ "$gate_installed" -ne 1 ]; then
     install_gate_script
   fi
 fi

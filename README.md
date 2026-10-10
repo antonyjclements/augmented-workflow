@@ -95,6 +95,28 @@ The repository root `aw-version.txt` is the single version source for installer-
 
 ## Upgrade Existing Installs
 
+**Consolidation migration prerequisite:** execute the new installer from a separately
+obtained, reviewed checkout/archive. Do not launch a pre-consolidation (including
+0.15.0) global `install.sh --remote` or `upgrade.sh --refresh-skills --remote`:
+that already-running old script retains its unsafe copy/delete functions even
+when it downloads new source, and can overwrite a custom `aw-spec` or `aw-ship`. Updating the
+archive cannot retroactively fix that old bootstrap program.
+
+Obtain the approved candidate/release separately, then run its installer:
+
+```sh
+git clone https://github.com/antonyjclements/augmented-workflow.git /tmp/aw-reviewed-upgrade
+git -C /tmp/aw-reviewed-upgrade checkout <approved-consolidation-commit-or-tag>
+bash /tmp/aw-reviewed-upgrade/skills/aw-init/scripts/install.sh --repo /path/to/target/repo --dry-run
+# Review ownership, collisions, preserved routing and backups before applying.
+bash /tmp/aw-reviewed-upgrade/skills/aw-init/scripts/install.sh --repo /path/to/target/repo
+```
+
+Use a fresh destination instead of overwriting an existing checkout. The ref must
+contain this reviewed migration; no consolidation release ref is selected yet. Preserve
+customized configuration and use the same skills-directory override throughout.
+The remaining upgrade/remote examples assume this new bootstrap prerequisite.
+
 Upgrade via the bundled script rather than an agent skill:
 
 ```bash
@@ -251,19 +273,19 @@ Imported and authored PRDs are stored as source artifacts:
 docs/product/prds/<date>-<slug>.md
 ```
 
-Then pass the PRD path to `aw-brainstorm` unless the PRD is already clear and you explicitly want a spec draft. PRDs often contain implicit ambiguity, assumptions, and open questions. `aw-brainstorm` resolves that ambiguity and creates or updates the living feature spec in the same run.
+Then pass the PRD path to `aw-spec` when you want durable feature intent. It uses the direct route for clear requirements and discovery for consequential ambiguity. A request to save or author a PRD stays with `aw-prd`; exploratory-only requests do not silently become accepted specs.
 
 ```text
-Use aw-brainstorm with docs/product/prds/2026-05-24-checkout-redesign.md.
+Use aw-spec with docs/product/prds/2026-05-24-checkout-redesign.md.
 ```
 
-For a raw idea that should become a living spec, start with `aw-brainstorm` directly:
+For a raw idea that should become a living spec, start with `aw-spec` directly:
 
 ```text
-Use aw-brainstorm to explore account recovery and create the living spec.
+Use aw-spec to explore account recovery and create the living spec.
 ```
 
-For existing behavior or already-clear requirements, `aw-create-spec` can still be used directly:
+For existing behavior or already-clear requirements, `aw-spec` can still be used directly:
 
 ```text
 Analyze the checkout flow and create a spec for how it works today.
@@ -483,16 +505,16 @@ Default workflow step keys:
 
 ```text
 prd -> aw-prd
-brainstorm -> aw-brainstorm
-create_spec -> aw-create-spec
+brainstorm -> aw-spec
+create_spec -> aw-spec
 request_human_review -> aw-request-human-review
 plan -> aw-plan
 review -> aw-review
 create_tickets -> aw-create-tickets
 work -> aw-work
 check_workflow_compliance -> aw-check-workflow-compliance
-commit -> aw-commit
-commit_push_pr -> aw-commit-push-pr
+commit -> aw-ship local-commit
+commit_push_pr -> aw-ship full-pr
 monitor_pipeline -> (no bundled skill; set workflow.steps.monitor_pipeline.skill)
 ```
 
@@ -656,7 +678,7 @@ If the answer is obvious and repo-local, the agent can write the record. If scop
 
 ### 10. Monitor CI after PR creation
 
-When committing, `aw-commit` and `aw-commit-push-pr` first check `docs/workflow/config.yml`. If `workflow.steps.commit.skill` is configured, they delegate commit message generation or commit creation to that enterprise step. Otherwise, they use the configured template and examples when present.
+When committing, `aw-ship` first checks `docs/workflow/config.yml`. If `workflow.steps.commit.skill` is configured, they delegate commit message generation or commit creation to that enterprise step. Otherwise, they use the configured template and examples when present.
 
 For repos that require scoped conventional commits:
 
@@ -669,7 +691,7 @@ git:
       - "docs(readme): update usage guide"
 ```
 
-When creating a PR, `aw-commit-push-pr` checks `pull_request.template`. If configured, it loads the referenced markdown title/body templates and fills known placeholders before creating the PR with the built-in GitHub CLI flow. If blank, it uses the normal generated title and body.
+When creating a PR, `aw-ship full-pr` checks `pull_request.template`. If configured, it loads the referenced markdown title/body templates and fills known placeholders before creating the PR with the built-in GitHub CLI flow. If blank, it uses the normal generated title and body.
 
 Example:
 
@@ -682,7 +704,7 @@ pull_request:
 
 Useful template placeholders include `{default_title}`, `{default_body}`, `{summary}`, `{what_changed}`, `{validation}`, `{risks}`, `{ticket}`, `{spec}`, `{decisions}`, and `{badge}`.
 
-For non-trivial changes, `aw-commit-push-pr` runs the configured compliance check after pushing the branch and before creating the PR. If `workflow.steps.check_workflow_compliance.skill` is blank, it uses `aw-check-workflow-compliance`.
+For non-trivial changes, `aw-ship full-pr` runs the configured compliance check after pushing the branch and before creating the PR. If `workflow.steps.check_workflow_compliance.skill` is blank, it uses `aw-check-workflow-compliance`.
 
 If post-PR monitoring is configured, the PR creation flow should invoke the configured monitor step after creating or updating the PR.
 
@@ -818,7 +840,7 @@ Before commit or PR, the agent should explicitly check whether the diff changes 
 
 ```text
 Use aw-prd to persist the pasted/file/link PRD.
-Use aw-brainstorm with the imported PRD path to clarify requirements and create/update the feature spec.
+Use aw-spec with the imported PRD path to clarify requirements and create/update the feature spec.
 Use aw-plan with the feature spec path to plan implementation.
 Use aw-create-tickets with the plan path to turn the plan into stories.
 Have an agent pick up the first ticket ID/URL with aw-work.
@@ -826,7 +848,7 @@ Use aw-capture decision for any choices we make during build.
 Use aw-review before opening the PR (spec drift + code review in one step).
 Run the capture checkpoint.
 Update README.md if setup, commands, config, or workflow behavior changed.
-Use aw-commit-push-pr to commit, push, run workflow compliance, and create the PR.
+Use aw-ship full-pr to commit, push, run workflow compliance, and create the PR.
 If `workflow.steps.monitor_pipeline.skill` is configured, invoke it with the PR URL to watch CI and fix failures until green.
 ```
 
@@ -845,7 +867,7 @@ Summarize the ticket, source spec, decisions, and checks run.
 ### Existing Feature Discovery
 
 ```text
-Analyze the current billing flow and use aw-create-spec to document how it works today.
+Analyze the current billing flow and use aw-spec to document how it works today.
 Use aw-discover-standards to capture any repeated billing conventions you find.
 ```
 
@@ -906,28 +928,56 @@ AUGMENTED_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/inst
 AUGMENTED_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/augmented-workflow/archive/refs/tags/v0.6.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
 ```
 
+## Everyday Menu
+
+Start with `aw-help`, `aw-spec`, `aw-plan`, `aw-work`, `aw-debug`, `aw-review`,
+`aw-ship`, and `aw-capture`. This is a human-facing menu, not a smaller
+model registry. `aw-ship local-commit` remains available for local-only commits, and neither
+spec writing nor planning authorizes publication.
+
 ## Included Skills
+
+The canonical bundle has 20 discoverable entrypoints after the separately authorized
+spec and shipping consolidations. The inventory below is a
+usage summary; `skills/*/SKILL.md` is authoritative.
+
 
 - `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`; upgrade via `skills/aw-init/scripts/upgrade.sh`
 - `aw-help`: get a guided recommendation for which skill to run next based on what you're trying to do and where you are in the workflow; reads `docs/workflow/field-guide.md` when available
 - `aw-prd`: create or import PRDs under `docs/product/prds/`; routes by source between import mode (pasted content/file/URL) and create mode (ideas/notes)
-- `aw-brainstorm`: clarify ambiguous PRDs or ideas and create the right artifact, usually a living feature spec
-- `aw-create-spec`: directly create or update living feature specs in `docs/features/<feature>/spec.md`
+- `aw-spec`: create/update living feature specs directly from clear input, or explore consequential ambiguity first; exploratory-only requests stay exploratory
 - `aw-plan`: create implementation plans from specs or requirements
 - `aw-review`: review code, docs, plans, and specs — routes by target: code diff → code review with P0-P3 findings; simplify/refactor → 3-agent simplification pass; doc/plan → document review; spec → spec drift check
 - `aw-create-tickets`: turn plans into configured Linear/Jira/custom implementation tickets
 - `aw-work`: implement plans, tickets, specs, or concrete requests
 - `aw-debug`: investigate and fix bugs systematically
 - `aw-check-workflow-compliance`: check workflow routing, test policy, acceptance coverage, README expectations, and review gates after push and before PR creation
-- `aw-commit`: create focused commits
-- `aw-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
+- `aw-ship`: local commits, full PR workflow, read-only description drafts, or explicitly authorized existing-PR text updates; each mode preserves its own permission boundary
 - `aw-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers
 - `aw-capture`: capture durable knowledge — routes by type: `decision` → immutable record in `docs/decisions/`; `learning` → correction-driven learning in `docs/learnings/`; `solution` → reusable solved-problem doc in `docs/solutions/`; `session` → structured session log in `docs/sessions/` feeding the memory synthesis loop
 - `aw-refresh`: refresh and maintain docs registries — routes by scope: `decisions` → rebuild index and summaries without rewriting records; `solutions` → audit and update stale solution docs; `features` → regenerate `docs/features/index.yml`; `cleanup` → remove workflow artifacts marked `status: archived`
 - `aw-discover-standards`: extract repeated codebase conventions into `docs/standards/`
 - `aw-synthesize-memory`: process session logs into learnings, regenerate `docs/context/wiki.md`, surface pattern candidates for standards promotion, and expire old processed logs
+- `aw-research`: focused, cited research without silently changing accepted intent
+- `aw-pin-behavior`: characterize public behavior and compare pinned baselines
 - `aw-resolve-pr-feedback`: resolve PR review comments
 - `aw-create-worktree`: create isolated git worktrees
+
+The consolidated `aw-spec` replaces the retired `aw-brainstorm` and
+`aw-create-spec` entrypoints. Exact old slash commands are not universal aliases;
+use `aw-spec`. Existing `brainstorm` and `create_spec` configuration keys remain
+independent stages, including distinct custom providers. See the migration and
+rollback guidance in `docs/workflow/README.md` before updating an existing install.
+
+`aw-ship` separately replaces `aw-commit` and `aw-commit-push-pr`. Use
+`aw-ship local-commit` for local-only commits, `aw-ship full-pr` for the authorized
+commit/push/PR flow, `aw-ship description-only` for text without repository or PR
+mutations, and `aw-ship description-update` for a confirmed existing-PR text
+change without commits or pushes. The `commit` and `commit_push_pr` configuration
+keys remain distinct. Human sign-off PRs still use `aw-request-human-review`.
+For a Phase 1-to-Phase 2 upgrade, run the current reviewed installer from new
+source; the older Phase 1 bootstrap may fail safely before writes because it
+does not know the new helper fingerprints.
 
 The repo carries a curated skill set under `skills/`. Deprecated or unrelated skills should be removed rather than kept for completeness.
 
