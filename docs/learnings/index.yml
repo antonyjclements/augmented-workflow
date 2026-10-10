@@ -33,12 +33,6 @@ learnings:
     tags:
       - process
       - evaluation
-  - path: docs/learnings/2026-07-02-confirm-file-absence-with-git.md
-    title: Confirm file absence with git, not filtered shell output
-    scope: repo
-    tags:
-      - tooling
-      - shell
   - path: docs/learnings/2026-07-14-use-explicit-utf8-for-ruby-doc-processing.md
     title: Use explicit UTF-8 for Ruby doc processing
     scope: repo

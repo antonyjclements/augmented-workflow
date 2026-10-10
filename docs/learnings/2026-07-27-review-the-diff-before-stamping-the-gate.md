@@ -5,7 +5,7 @@ created: 2026-07-27
 trigger: correction
 status: tentative
 evidence-count: 2
-unconfirmed-runs: 0
+unconfirmed-runs: 1
 derived-from:
   - 2026-07-26-e2e-suggest-flag-2
   - 2026-07-27-augmented-workflow-evaluation-fixes

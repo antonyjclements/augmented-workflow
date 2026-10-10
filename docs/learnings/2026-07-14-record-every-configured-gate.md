@@ -5,7 +5,7 @@ created: 2026-07-14
 trigger: dead-end
 status: tentative
 evidence-count: 2
-unconfirmed-runs: 0
+unconfirmed-runs: 1
 derived-from:
   - 2026-07-03-enforcement-gates-telemetry-org-knowledge
   - 2026-07-27-augmented-workflow-evaluation-fixes
