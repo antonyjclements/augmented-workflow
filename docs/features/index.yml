@@ -1,4 +1,12 @@
 features:
+  - key: product-feedback
+    title: Product Feedback Triage
+    spec: docs/features/product-feedback/spec.md
+    status: active
+    tags:
+      - workflow
+      - feedback
+      - triage
   - key: progress-tracking
     title: Local Workstream Progress Tracking
     spec: docs/features/progress-tracking/spec.md

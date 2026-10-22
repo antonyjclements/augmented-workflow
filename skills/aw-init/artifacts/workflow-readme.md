@@ -61,6 +61,34 @@ human_review:
     reviewers: []
 ```
 
+## Product Feedback Sources
+
+`aw-feedback` works with supplied issues, Slack threads or pasted notes without
+configuration. For recurring feedback intake, optionally add these source defaults
+to `docs/workflow/config.yml`:
+
+```yaml
+feedback:
+  sources:
+    github:
+      repositories: [your-org/your-repo]
+    slack:
+      channels: ["https://your-workspace.slack.com/archives/C123456"]
+```
+
+`feedback.sources.github.repositories` is a list of `owner/repo` strings;
+`feedback.sources.slack.channels` is a list of channel URLs or workspace-qualified
+channel IDs. Both default to empty lists. Explicit invocation scope overrides
+these defaults. Without sources, the current GitHub remote may supply the repository;
+Slack channels are never inferred. Resolve material ambiguity in workspace or time
+scope before a broad search. Source defaults do not enable monitoring or authorize
+posting, issue changes, implementation or product decisions.
+
+These optional values are read by the skill; no helper migration or required config
+block is needed. Skill-provider routing stays separate: Slack research reuses
+`aw-research` and `workflow.auxiliary.research_slack.skill`. There is no new mandatory
+workflow step, gate, or `workflow.auxiliary.feedback.skill` in this version.
+
 ## Schema
 
 | Path | Type | Default | Description |

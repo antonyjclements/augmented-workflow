@@ -25,7 +25,7 @@ function includes(text, patterns) {
 test('one canonical router replaces both shipping entrypoints', () => {
   const skills = fs.readdirSync(path.join(root, 'skills')).filter((name) =>
     fs.existsSync(path.join(root, 'skills', name, 'SKILL.md')));
-  assert.strictEqual(skills.length, 20);
+  assert.strictEqual(skills.length, 21);
   assert(skills.includes('aw-ship'));
   for (const old of ['aw-commit', 'aw-commit-push-pr']) {
     assert(!fs.existsSync(path.join(root, 'skills', old)), `${old} must be retired`);

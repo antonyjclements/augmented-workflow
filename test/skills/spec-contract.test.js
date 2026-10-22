@@ -27,7 +27,7 @@ function includes(text, patterns) {
 test('one canonical entrypoint replaces both retired spec skills', () => {
   const skills = fs.readdirSync(path.join(root, 'skills')).filter((name) =>
     fs.existsSync(path.join(root, 'skills', name, 'SKILL.md')));
-  assert.strictEqual(skills.length, 20);
+  assert.strictEqual(skills.length, 21);
   assert(skills.includes('aw-spec'));
   for (const old of ['aw-brainstorm', 'aw-create-spec']) {
     assert(!fs.existsSync(path.join(root, 'skills', old)), `${old} must be retired`);

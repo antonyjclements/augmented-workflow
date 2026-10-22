@@ -81,6 +81,7 @@ Use this when determining which skill to recommend:
 | Raw or ambiguous idea, open scope, product questions | `aw-spec` (exploratory) |
 | Exploration-only, comparing options without commitment | `aw-spec` (exploratory; no automatic spec) |
 | Existing behavior or living intent to document/update | `aw-spec` (direct) |
+| Product partner/tester feedback needs triage or retest reconciliation | `aw-feedback` |
 | Focused or report-only research | `aw-research` (evidence, no silent product-doc write) |
 | Typo or tiny mechanical fix | Direct lightweight edit; no compulsory spec or plan |
 | Explicit plan request, or spec exists and needs a plan | `aw-plan` |
