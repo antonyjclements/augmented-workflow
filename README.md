@@ -946,7 +946,7 @@ spec writing nor planning authorizes publication.
 
 ## Included Skills
 
-The canonical bundle has 20 discoverable entrypoints after the separately authorized
+The canonical bundle has 21 discoverable entrypoints after the separately authorized
 spec and shipping consolidations. The inventory below is a
 usage summary; `skills/*/SKILL.md` is authoritative.
 
@@ -967,6 +967,7 @@ usage summary; `skills/*/SKILL.md` is authoritative.
 - `aw-refresh`: refresh and maintain docs registries — routes by scope: `decisions` → rebuild index and summaries without rewriting records; `solutions` → audit and update stale solution docs; `features` → regenerate `docs/features/index.yml`; `cleanup` → remove workflow artifacts marked `status: archived`
 - `aw-discover-standards`: extract repeated codebase conventions into `docs/standards/`
 - `aw-synthesize-memory`: process session logs into learnings, regenerate `docs/context/wiki.md`, surface pattern candidates for standards promotion, and expire old processed logs
+- `aw-feedback`: reconcile product partner/tester feedback from issues and Slack with accepted intent and release evidence; prepare actionable handoffs and retest drafts
 - `aw-research`: focused, cited research without silently changing accepted intent
 - `aw-pin-behavior`: characterize public behavior and compare pinned baselines
 - `aw-resolve-pr-feedback`: resolve PR review comments
