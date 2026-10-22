@@ -95,3 +95,11 @@ Independent behavioral replay remains a useful follow-up after real skill usage.
 These regression suites verify existing packaging/routing behavior; they do not
 execute the new skill as an autonomous agent. Global skill installation and any
 Screen Balance configuration changes are outside this change.
+
+## Publication traceability follow-up
+
+The manual acceptance scenarios in `product-feedback.feature` now link AWFB-001
+through AWFB-004 through the trace annotation helper. The later build-86 correction
+is included as a walkthrough scenario: tester availability must follow the latest
+owner clarification. These scenarios remain manual checks, not automated agent
+execution.
