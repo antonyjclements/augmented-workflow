@@ -1,0 +1,5 @@
+features:
+  - key: theory-building-site
+    title: Theory-Building Site Narrative and Paper Presentation
+    spec: docs/features/theory-building-site/spec.md
+    tags: [website, branding, motion]

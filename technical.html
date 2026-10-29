@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="The evidence and renewal model behind Augmented Workflow.">
   <title>Augmented Workflow — The technical model</title>
-  <link rel="icon" href="assets/augmented-workflow-icon-dark-gradient.jpg">
+  <link rel="icon" href="assets/wren/wren-icon-light-32.png">
   <style>
     :root { --ink:#111827; --muted:#5f6673; --paper:#f7f8fb; --panel:#fff; --line:#dfe1e7; --deep:#39406d; --blue:#7c6cff; --mint:#e4e1ff; --sun:#eeedff; --rose:#dfe5ff; --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
     * { box-sizing:border-box; } html { scroll-behavior:smooth; } body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); line-height:1.55; } a { color:inherit; } .shell { width:min(1120px,calc(100% - 3rem)); margin:0 auto; }
@@ -20,6 +20,8 @@
     .closing { border:0; background:var(--deep); color:#fff; } .closing-inner { max-width:760px; } .closing h2 { font-size:clamp(2.6rem,5.5vw,4.9rem); } .closing p { max-width:590px; margin:1.45rem 0 2rem; color:#d2e0e8; font-size:1.05rem; } .button { display:inline-block; padding:.78rem 1.05rem; border-radius:.35rem; background:#fff; color:var(--deep); font-size:.9rem; font-weight:700; text-decoration:none; } .button:hover,.button:focus { background:var(--mint); } footer { padding:2.5rem 0 3.25rem; color:var(--muted); font-size:.78rem; } footer p { max-width:800px; margin:0; } footer a { text-underline-offset:.18em; }
     @media (max-width:850px) { .section-intro,.agent { grid-template-columns:1fr; } .evidence-grid { grid-template-columns:repeat(2,1fr); } .renewal { grid-template-columns:1fr; gap:.45rem; } .renewal-step { min-height:auto; } .renewal-step::after { top:auto; right:auto; bottom:-.9rem; left:50%; transform:translateX(-50%) rotate(90deg); } } @media (max-width:620px) { .shell { width:min(100% - 2rem,1120px); } .nav { align-items:flex-start; flex-direction:column; } .nav-links { justify-content:flex-start; } .boundary,.check-grid,.evidence-grid { grid-template-columns:1fr; } }
   </style>
+  <link rel="stylesheet" href="assets/wren-paper.css">
+  <script src="assets/wren-idle.js" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -30,15 +32,16 @@
 <a href="index.html">Overview</a>
 <a href="#evidence-model">Evidence model</a>
 <a href="usage-guide.html">Usage guide</a>
-<a href="https://github.com/antonyjclements/agentic-workflow">GitHub</a>
+<a href="https://github.com/antonyjclements/augmented-workflow">GitHub</a>
 </div>
 </nav>
 </header>
   <main>
     <div class="shell hero">
+<img class="wren-hero" data-wren-pose="alert" data-wren-theme="light" src="assets/wren/wren-alert.png" alt="" width="256" height="256">
 <div class="eyebrow">Technical model</div>
-<h1>How a team keeps its working theory available.</h1>
-<p class="lede">Augmented Workflow gives intent, reasoning, correction, and verification distinct places to live. Those artifacts help contributors rebuild a useful understanding of a system as it changes.</p>
+<h1>Keep the reason. Check the evidence.</h1>
+<p class="lede">AW separates current intent, decision history, reusable lessons, and local work-in-progress. Mechanical checks answer narrow questions about those records. People still judge the assumptions and consequences behind a change.</p>
 <a class="hero-link" href="index.html">Read the overview of software continuity →</a>
 </div>
     <section>
@@ -110,7 +113,7 @@
 <article class="renewal-step">
 <div class="label">03</div>
 <h3>Check</h3>
-<p>Test behavior and inspect the reasoning, boundaries, and consequences of the work.</p>
+<p>Compare behavior with a useful reference and inspect assumptions, boundaries, and consequences.</p>
 </article>
 <article class="renewal-step">
 <div class="label">04</div>
@@ -125,7 +128,7 @@
 </div>
 <div style="max-width:760px; margin-top:2rem;">
 <h3>Test the intended experience before building.</h3>
-<p>When the experience is uncertain, <code>aw-brainstorm</code> makes the agent's interpretation tangible enough for people to question:</p>
+<p>When the experience is uncertain, <code>aw-spec</code> makes the agent's interpretation tangible enough for people to question:</p>
 <ol>
 <li><strong>Interpret intent.</strong> Explain what people should understand, accomplish, and feel, and which qualities of any references support that experience.</li>
 <li><strong>Suggest a prototype.</strong> Describe what a small disposable example would clarify.</li>
@@ -141,16 +144,16 @@
 <div class="shell">
 <div class="section-intro">
 <h2>What a deterministic layer can establish.</h2>
-<p>A gate can show that a process left evidence. It cannot determine whether the work was done well. That judgment remains with the people who understand the change and its consequences.</p>
+<p>A receipt validator can accept a recent, correctly shaped record. It does not independently observe the review. Freshness checks and trace links narrow the questions a person must investigate; they do not establish quality.</p>
 </div>
 <div class="check-grid">
 <article class="check check-can">
-<h3>Evidence a gate can collect</h3>
+<h3>Facts a configured check can establish</h3>
 <ul>
 <li>Whether required artifacts are present and linked</li>
-<li>Whether a stated behavior has verification coverage</li>
-<li>Whether review and delivery checkpoints were recorded</li>
-<li>Whether the evidence is fresh enough for the stated policy</li>
+<li>Whether a stated requirement has a claimed test connection</li>
+<li>Whether expected records are present and correctly shaped</li>
+<li>Whether configured paths changed after a recorded review</li>
 </ul>
 </article>
 <article class="check check-judgment">
@@ -164,14 +167,14 @@
 </ul>
 </article>
 </div>
-<p style="max-width: 720px; margin: 1.5rem 0 0; color: var(--muted);">Consider a parent asking children to wash their hands before dinner. The parent cannot watch every moment at the sink. They can look for evidence: enough time in the bathroom, running water, and clean hands. <code>aw-gate.js</code> works the same way. It records observable facts about the workflow so a team can see whether the expected process took place and focus its judgment where it matters.</p>
+<p style="max-width: 720px; margin: 1.5rem 0 0; color: var(--muted);">Hearing water running is a clue that someone washed their hands; it is not a complete account of what happened. Treat workflow records with the same care. A test-runner result tied to a revision carries different weight from an agent’s unsupported summary. Checks also need enforcement where they cannot quietly be skipped. <a href="https://antonyjclements.github.io/posts/did-you-wash-your-hands/">Read the essay on deterministic checks</a>.</p>
 </div>
 </section>
     <section>
 <div class="shell agent">
 <div>
 <div class="eyebrow">Agent participation</div>
-<h2>Give agents a basis for responsible work.</h2>
+<h2>Keep consequential choices visible.</h2>
 </div>
 <div>
 <p>Agents are useful when their work can be connected to current intent, prior reasoning, and observable checks. That connection gives reviewers something concrete to inspect and gives an agent a way to expose what it could not determine.</p>
@@ -186,8 +189,11 @@
 </div>
 </div>
 </section>
+<section><div class="shell"><div class="section-intro"><h2>Three kinds of continuity.</h2><p>A temporary checkpoint and a lasting lesson answer different questions. Keeping them separate helps a useful note avoid becoming a stale instruction.</p></div><div class="participants"><article class="participant"><h3>A lesson with a boundary</h3><p>Capture the assumption behind a repeated correction, the situation where it applies, and a check that could prevent a recurrence. Keep its source and rationale. Revisit it when the repo changes; repetition alone does not make a claim reliable.</p><p><a href="https://antonyjclements.github.io/posts/teaching-the-repo-what-you-keep-correcting/">Read about maintaining useful learnings →</a></p></article><article class="participant"><h3>A checkpoint for unfinished work</h3><p>Record the goal, finished and unfinished work, rejected approaches, checks and their revision, and the next action. On resume, compare the note with the branch and working changes. AW’s checkpoint is local and git-ignored; moving it to another checkout requires an explicit transfer.</p><p><a href="https://antonyjclements.github.io/posts/picking-up-where-the-last-agent-stopped/">Read about session handovers →</a></p></article></div><p style="max-width:760px;margin-top:1.5rem">Session logs and a short context wiki help contributors find their way to durable records. A summary can lose qualifications; correctness-critical requirements belong in the specification or decision itself. Logs must be captured for synthesis to have anything to work from.</p></div></section>
+<section><div class="shell"><div class="section-intro"><h2>Use references where they exist.</h2><p>Choose review depth by the cost of undoing a mistake. Existing behavior can provide a reference for a rewrite; a new architectural decision may need someone who understands the system.</p></div><div class="boundary"><div class="boundary-main"><div class="eyebrow" style="color:var(--mint)">Behavior pins</div><p>Establish the covered behavior on the old revision before changing the implementation.</p></div><div class="boundary-note"><h3>State the limit of the comparison.</h3><p>A passing pin means the new version matches the old on the observations checked. It does not establish complete equivalence, sufficient coverage, or that the old behavior was correct. Deliberate behavior changes need explicit new expectations.</p><p><a href="https://antonyjclements.github.io/posts/code-without-a-theory/">Read about references and engineering judgment →</a></p></div></div></div></section>
     <section class="closing">
 <div class="shell closing-inner">
+<img class="wren-signoff" data-wren-pose="alert" data-wren-theme="dark" src="assets/wren/wren-alert-dark.png" alt="" width="145" height="145" loading="lazy">
 <div class="eyebrow" style="color:var(--mint)">A durable practice</div>
 <h2>Keep the next explanation close to the next change.</h2>
 <p>Augmented Workflow is designed for teams that want software to remain explainable as contributors, requirements, and tools evolve.</p>
@@ -197,8 +203,10 @@
   </main>
   <footer>
 <div class="shell">
-<p>This model is informed by Peter Naur's essay <a href="https://pages.cs.wisc.edu/~remzi/Naur.pdf">Programming as Theory Building</a>. The pages use an original-language paraphrase and do not imply an endorsement. <a href="https://github.com/antonyjclements/agentic-workflow">Explore Augmented Workflow on GitHub</a>.</p>
+<p>This model is informed by Peter Naur's essay <a href="https://pages.cs.wisc.edu/~remzi/Naur.pdf">Programming as Theory Building</a>. The pages use an original-language paraphrase and do not imply an endorsement. <a href="https://github.com/antonyjclements/augmented-workflow">Explore Augmented Workflow on GitHub</a>.</p>
 </div>
+
+<div class="shell motion-control"><button type="button" data-wren-motion aria-pressed="false" hidden>Wren motion</button></div>
 </footer>
 </body>
 </html>

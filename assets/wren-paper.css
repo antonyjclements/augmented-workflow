@@ -1,0 +1,49 @@
+/* Paper surfaces and Wren presentation shared by the three public pages. */
+:root { --paper:#f5f1e8; --panel:#fffdf7; --ink:#202736; --muted:#62616a; --line:#d9d2c4; --deep:#202a40; --blue:#6450d8; --violet:#6450d8; --mint:#e4dcfb; --soft:#e9e0f7; --sun:#f3e9d2; --rose:#e7e9df; }
+body { background-color:var(--paper); background-image:url("paper-grain.svg"),radial-gradient(ellipse at 15% 10%,#fffaf0 0,transparent 55%),radial-gradient(ellipse at 85% 60%,#ebe2d140 0,transparent 60%); background-size:180px 180px,100% 100%,100% 100%; }
+::selection { background:#ded5f2; color:var(--ink); }
+.site-header { background:#fffdf7d9; border-top:4px solid var(--deep); }
+.hero { position:relative; padding-top:clamp(3rem,7vw,6rem); padding-bottom:4rem; }
+h1,h2 { letter-spacing:-.04em; font-weight:650; }
+h1 { font-size:clamp(3rem,7.5vw,6.6rem); text-wrap:balance; }
+h2 { text-wrap:balance; }
+.eyebrow,.label,.evidence-label { letter-spacing:.09em; }
+.lockup { width:190px; padding-bottom:1rem; border-bottom:1px solid var(--line); }
+.hero > :not(.wren-hero) { position:relative; z-index:1; }
+.hero h1 { max-width:850px; }
+.hero .lede { max-width:710px; }
+.wren-hero { position:absolute; right:-1rem; top:2rem; width:150px; height:auto; opacity:.95; }
+.hero:has(.lockup) .wren-hero { top:0; }
+.hero:not(:has(.lockup)) .wren-hero { top:-.5rem; }
+.hero:not(:has(.lockup)) > .eyebrow { margin-bottom:2.2rem; }
+.moments,.loop,.boundary { border-radius:22px; border-color:#d9d2c480; box-shadow:0 8px 32px #63533c08,0 1px 4px #63533c05; }
+.evidence-card,.participant,.persona,.renewal-step,.start-note,.agent,.move { border-radius:20px 20px 24px 20px; border-color:#d9d2c480; background-color:var(--panel); background-image:url("paper-grain.svg"); background-size:180px 180px; box-shadow:0 8px 28px #63533c08,0 1px 4px #63533c05; }
+.evidence-card,.participant,.start-note { position:relative; }
+.evidence-card::after,.participant::after,.start-note::after { content:""; position:absolute; right:0; top:0; width:34px; height:34px; border-radius:0 18px 0 9px; background:linear-gradient(45deg,#ded4c180 0%,#f0e8d8 48%,#fffaf2 49%,#eee5d4 51%,#f5f1e8 52%); clip-path:polygon(0 0,100% 0,100% 100%); pointer-events:none; }
+.evidence-card { border-top-width:1px; }
+.evidence-claim,.start-card,.boundary-main { border-radius:22px; background:var(--deep); }
+.check { border-radius:22px; }
+.button { border-radius:12px; box-shadow:0 2px 8px #30291e0c; border:1px solid #d9d2c4; }
+.button:hover { transform:translateY(-1px); }
+.closing { position:relative; background:var(--deep); border-top:1px solid #fff2; border-radius:40px 40px 0 0; background-image:linear-gradient(135deg,transparent 80%,#ffffff04 80%),url("paper-grain.svg"); background-size:100% 100%,180px 180px; }
+.closing-inner { position:relative; z-index:1; }
+.closing .wren-signoff { display:block; width:145px; margin:0 0 1.5rem auto; }
+footer { border-top:1px solid var(--line); }
+a:focus-visible { outline:3px solid var(--violet); outline-offset:4px; }
+@media (max-width:760px) { .wren-hero { right:0; top:.25rem; width:100px; } .hero:not(:has(.lockup)) .wren-hero { top:-.25rem; } .hero:has(.lockup) .lockup { width:150px; } .hero { padding-top:3.5rem; } }
+@media (max-width:400px) { .hero:has(.lockup) .lockup { width:120px; } .wren-hero { width:100px; } }
+@media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } .button:hover { transform:none; } }
+
+/* Sprite frames change within a fixed square; the element never travels or wobbles. */
+.wren-sprite { display:block; aspect-ratio:1; height:auto; background-repeat:no-repeat; }
+.motion-control { margin-top:1.5rem; }
+.motion-control button { font:inherit; font-size:.8rem; padding:.55rem .85rem; color:var(--ink); background:var(--panel); border:1px solid #c9c0af; border-radius:12px; cursor:pointer; }
+.motion-control button:disabled { color:var(--muted); cursor:default; }
+.motion-control button:focus-visible { outline:3px solid var(--violet); outline-offset:4px; }
+
+/* Shared essay-derived content cards across overview and technical pages. */
+.participants { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.2rem; }
+.participant { padding:2rem; border:1px solid var(--line); }
+.participant h3 { margin:0 0 .75rem; font-size:1.5rem; line-height:1.2; }
+.participant p { color:var(--muted); }
+@media (max-width:620px) { .participants { grid-template-columns:1fr; } }

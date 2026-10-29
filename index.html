@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Augmented Workflow helps teams leave the evidence needed to understand and responsibly change software.">
-  <title>Augmented Workflow — Software that carries forward</title>
-  <link rel="icon" href="assets/augmented-workflow-icon-dark-gradient.jpg">
+  <meta name="description" content="Keep decisions, corrections, and unfinished work close to the code so people and agents can pick up with context.">
+  <title>Augmented Workflow — Give the next session a better starting point</title>
+  <link rel="icon" href="assets/wren/wren-icon-light-32.png">
   <style>
     :root { --ink:#111827; --muted:#5f6673; --paper:#f7f8fb; --panel:#fff; --line:#dfe1e7; --deep:#39406d; --blue:#7c6cff; --mint:#e4e1ff; --sun:#eeedff; --rose:#dfe5ff; --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
     * { box-sizing:border-box; } html { scroll-behavior:smooth; } body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); line-height:1.55; } a { color:inherit; } .shell { width:min(1120px,calc(100% - 3rem)); margin:0 auto; }
@@ -18,6 +18,8 @@
     .closing { border:0; background:var(--deep); color:#fff; } .closing-inner { max-width:780px; } .closing h2 { font-size:clamp(2.75rem,6vw,5.3rem); } .closing p { max-width:600px; margin:1.5rem 0 2rem; color:#d2e0e8; font-size:1.08rem; } .button { display:inline-block; padding:.78rem 1.05rem; border-radius:.35rem; background:#fff; color:var(--deep); font-size:.9rem; font-weight:700; text-decoration:none; } .button:hover,.button:focus { background:var(--mint); } footer { padding:2.5rem 0 3.25rem; color:var(--muted); font-size:.78rem; } footer p { max-width:800px; margin:0; } footer a { text-underline-offset:.18em; }
     @media (max-width:760px) { .shell { width:min(100% - 2rem,1120px); } .nav { align-items:flex-start; flex-direction:column; } .nav-links { justify-content:flex-start; } .section-intro,.evidence-layout { grid-template-columns:1fr; } .moments { grid-template-columns:repeat(2,1fr); } .moment:nth-child(2) { border-right:0; } .moment:nth-child(-n+2) { border-bottom:1px solid var(--line); } } @media (max-width:480px) { .moments,.evidence-grid,.participants { grid-template-columns:1fr; } .moment { min-height:auto; border-right:0; border-bottom:1px solid var(--line); } .moment:last-child { border-bottom:0; } }
   </style>
+  <link rel="stylesheet" href="assets/wren-paper.css">
+  <script src="assets/wren-idle.js" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -28,45 +30,46 @@
 <a href="#evidence">The practice</a>
 <a href="technical.html">Technical model</a>
 <a href="usage-guide.html">Usage guide</a>
-<a href="https://github.com/antonyjclements/agentic-workflow">GitHub</a>
+<a href="https://github.com/antonyjclements/augmented-workflow">GitHub</a>
 </div>
 </nav>
 </header>
   <main>
     <div class="shell hero">
+<img class="wren-hero" data-wren-pose="perched" data-wren-theme="light" src="assets/wren/wren-perched.png" alt="" width="256" height="256">
 <div class="lockup"><img src="assets/augmented-workflow-mark.svg" alt="Augmented Workflow AW mark"></div>
-<div class="eyebrow">A practice for software that lasts</div>
-<h1>Code is not enough to carry a system forward.</h1>
-<p class="lede">Every meaningful change depends on a working theory: what the software is for, why it is shaped this way, which tradeoffs still matter, and what the team has learned from reality. Augmented Workflow helps leave the evidence a later contributor needs to rebuild and extend that understanding.</p>
+<div class="eyebrow">Context for the next change</div>
+<h1>Give the next session a better starting point.</h1>
+<p class="lede">Augmented Workflow keeps intent, decisions, corrections, and unfinished work close to the code. Give the next person or agent the reasons behind the work, a useful place to resume, and a clear account of what still needs checking.</p>
 <a class="button" href="usage-guide.html">See how product, design, and engineering use AW</a>
-<div class="hero-note">For teams bringing agents into real product work</div>
+<div class="hero-note">A repo-native practice for working with coding agents</div>
 </div>
     <section>
 <div class="shell">
 <div class="section-intro">
-<h2>Continuity breaks in ordinary moments.</h2>
-<p>The loss rarely announces itself as missing documentation. It shows up when someone must explain a choice, judge a new constraint, or make a change without knowing what the system is protecting.</p>
+<h2>The code rarely explains the whole decision.</h2>
+<p>An implementation can run and pass its tests while leaving the next contributor unsure why it was built that way. These are the gaps AW helps a team make visible.</p>
 </div>
 <div class="moments">
 <article class="moment">
 <div class="moment-number">01</div>
-<h3>A requirement changes</h3>
-<p>The original intent becomes hard to separate from the old implementation.</p>
+<h3>A choice goes unnoticed</h3>
+<p>An agent picks a data store or wraps an old API. The code works, but nobody agreed that this was the architecture.</p>
 </article>
 <article class="moment">
 <div class="moment-number">02</div>
-<h3>A decision loses its reason</h3>
-<p>A constraint remains in code while the conversation that justified it disappears.</p>
+<h3>A correction repeats</h3>
+<p>You explain the same constraint again because the last conversation never became useful project guidance.</p>
 </article>
 <article class="moment">
 <div class="moment-number">03</div>
-<h3>A new person joins</h3>
-<p>They inherit a repository full of clues and must decide which ones still deserve trust.</p>
+<h3>A handover says “mostly done”</h3>
+<p>The next contributor must guess what is finished, what was rejected, and which checks have actually run.</p>
 </article>
 <article class="moment">
 <div class="moment-number">04</div>
-<h3>An agent starts fresh</h3>
-<p>It needs the same context, uncertainty, and review that responsible work has always required.</p>
+<h3>A green check says too little</h3>
+<p>A review record exists. Whether it is credible, current, and relevant still needs attention.</p>
 </article>
 </div>
 </div>
@@ -74,13 +77,13 @@
     <section id="evidence">
 <div class="shell">
 <div class="section-intro">
-<h2>Leave evidence people can use.</h2>
-<p>A repository can preserve useful traces of a team's understanding. Those traces make it easier to reconstruct, test, challenge, and renew a working theory as the software changes.</p>
+<h2>Keep what the next change will need.</h2>
+<p>Specs, decisions, and learnings preserve different parts of the work. They help people rebuild an understanding of the system; they cannot contain every intention or replace someone accountable for the next decision.</p>
 </div>
 <div class="evidence-layout">
 <div class="evidence-claim">
 <div class="eyebrow" style="color:var(--mint)">The central discipline</div>
-<p>Keep different kinds of knowledge in forms that can be found, questioned, and updated by the people responsible for the next change.</p>
+<p>Save the reason, where it applies, and what someone should check before relying on it.</p>
 </div>
 <div class="evidence-grid">
 <article class="evidence-card">
@@ -137,19 +140,23 @@
 </div>
 </div>
 </section>
+<section id="writing"><div class="shell"><div class="section-intro"><h2>The thinking behind AW.</h2><p>Four essays follow the problem from engineering judgment to the practical work of checks, corrections, and handovers.</p></div><div class="evidence-grid"><article class="evidence-card"><div class="evidence-label">Essay 01</div><h3><a href="https://antonyjclements.github.io/posts/code-without-a-theory/">Code Without a Theory</a></h3><p>Keep a person involved in the decisions that shape the system.</p></article><article class="evidence-card"><div class="evidence-label">Essay 02</div><h3><a href="https://antonyjclements.github.io/posts/did-you-wash-your-hands/">Did you wash your hands?</a></h3><p>Ask what a check establishes, where its evidence comes from, and what it leaves open.</p></article><article class="evidence-card"><div class="evidence-label">Essay 03</div><h3><a href="https://antonyjclements.github.io/posts/teaching-the-repo-what-you-keep-correcting/">Teaching the repo what you keep correcting</a></h3><p>Save the cause, scope, and useful next check behind a repeated correction.</p></article><article class="evidence-card"><div class="evidence-label">Essay 04</div><h3><a href="https://antonyjclements.github.io/posts/picking-up-where-the-last-agent-stopped/">Picking up where the last agent stopped</a></h3><p>Leave a handover that separates agreed intent, unfinished work, and unverified assumptions.</p></article></div></div></section>
     <section class="closing">
 <div class="shell closing-inner">
+<img class="wren-signoff" data-wren-pose="alert" data-wren-theme="dark" src="assets/wren/wren-alert-dark.png" alt="" width="145" height="145" loading="lazy">
 <div class="eyebrow" style="color:var(--mint)">The outcome</div>
-<h2>Software a later contributor can understand again.</h2>
-<p>Augmented Workflow gives a team a repeatable way to keep intent, reasoning, correction, and verification close to the work. That makes the next change easier to justify and safer to carry through.</p>
+<h2>Leave a handover you would want to receive.</h2>
+<p>Explain the goal, the current state, the choices already made, and the next useful check. Let the next session start by checking that account against the checkout, rather than reconstructing the conversation.</p>
 <a class="button" href="technical.html">Read the technical model</a>
 </div>
 </section>
   </main>
   <footer>
 <div class="shell">
-<p>This site is informed by Peter Naur's essay <a href="https://pages.cs.wisc.edu/~remzi/Naur.pdf">Programming as Theory Building</a>. It paraphrases the essay's ideas; it does not suggest an endorsement. <a href="https://github.com/antonyjclements/agentic-workflow">Explore Augmented Workflow on GitHub</a>.</p>
+<p>Explore <a href="https://antonyjclements.github.io/">Antony Clements’s essays on working with agents</a>. The theory-building foundation draws on Peter Naur’s essay <a href="https://pages.cs.wisc.edu/~remzi/Naur.pdf">Programming as Theory Building</a>. It paraphrases the essay's ideas; it does not suggest an endorsement. <a href="https://github.com/antonyjclements/augmented-workflow">Explore Augmented Workflow on GitHub</a>.</p>
 </div>
+
+<div class="shell motion-control"><button type="button" data-wren-motion aria-pressed="false" hidden>Wren motion</button></div>
 </footer>
 </body>
 </html>
