@@ -36,3 +36,7 @@ Intent and verification: `docs/features/theory-building-site/`.
 ## Content sources
 
 The public copy draws on Antony Clements’s four essays: Code Without a Theory; Did you wash your hands?; Teaching the repo what you keep correcting; and Picking up where the last agent stopped. Source links and scope are recorded in `docs/features/theory-building-site/spec.md`. Research experiments and pilot findings are excluded from the website content.
+
+## Share card
+
+`assets/aw-share-card.svg` is the editable source for the 1200 × 630 PNG used by Open Graph and Twitter card metadata on all three pages. It pairs the unmodified AW mark with the approved Wren and the current overview headline.
