@@ -1,0 +1,3 @@
+{"ts":"2026-11-05T02:42:21.202Z","event":"synthesize","detail":null,"source":"aw-gate"}
+{"ts":"2026-11-05T02:42:21.804Z","event":"review","detail":"report-only; independently reviewed full diff; verified exact committed HEAD 02185aa6aa0a7e66ac697c32207223025f143df6","source":"aw-gate"}
+{"ts":"2026-11-05T02:43:24.823Z","event":"check_workflow_compliance","detail":null,"source":"aw-gate"}

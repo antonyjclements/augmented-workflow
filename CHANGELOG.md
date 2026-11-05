@@ -14,6 +14,9 @@ version has no entry here.
 
 ### Fixed
 
+- Validate indexed documentation paths with trailing YAML comments correctly:
+  missing quoted paths fail, and valid paths containing a literal `#` pass.
+
 - Pass the installer’s prepared source to compatible aw-cli upgrades, preserving
   pinned archives and avoiding unsafe legacy `aw init` fallback.
 
