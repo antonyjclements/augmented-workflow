@@ -157,6 +157,47 @@ function seedFeature(root) {
   ok('a scalar sibling of the list does not mask a missing indexed path');
 }
 
+// Inline comments must be removed before unquoting either map assignment.
+// Check both path keys, both field positions, and existing/missing files so
+// the parser cannot turn a missing path into a skipped non-docs/ reference or
+// mistake a literal hash in a valid filename for a comment.
+for (const key of ['path', 'spec']) {
+  for (const firstField of [true, false]) {
+    for (const [label, ref, scalar] of [
+      ['bare', 'docs/standards/a.md', 'docs/standards/a.md # trailing comment'],
+      ['single quoted', 'docs/standards/a.md', "'docs/standards/a.md' # trailing comment"],
+      ['double quoted', 'docs/standards/a.md', '"docs/standards/a.md" # trailing comment'],
+      ['bare literal hash', 'docs/standards/a#b.md', 'docs/standards/a#b.md # trailing comment'],
+      ['single quoted literal hash', 'docs/standards/a # b.md', "'docs/standards/a # b.md' # trailing comment"],
+      ['double quoted literal hash', 'docs/standards/a # b.md', '"docs/standards/a # b.md"\t# trailing comment'],
+    ]) {
+      for (const exists of [false, true]) {
+        const root = makeRepo();
+        const fields = firstField
+          ? [`  - ${key}: ${scalar}`, '    title: A']
+          : ['  - title: A', `    ${key}: ${scalar}`];
+        write(root, 'docs/standards/index.yml', ['standards:', ...fields, ''].join('\n'));
+        if (exists) write(root, ref, '# A\n');
+        const res = run(root);
+        assert.strictEqual(res.status, exists ? 0 : 1, `${key} ${label}: ${res.stderr}`);
+        if (!exists) assert.ok(res.stderr.includes(`indexed path missing: ${ref}\n`), res.stderr);
+        ok(`${exists ? 'existing' : 'missing'} ${label} ${key} with inline comment in ${firstField ? 'opening' : 'continuation'} field`);
+      }
+    }
+  }
+}
+
+{
+  const root = makeRepo();
+  seedFeature(root);
+  write(root, 'docs/features/index.yml', [
+    'features:', '  - key: alpha', '    spec: "docs/features/alpha/spec.md" # active feature', '',
+  ].join('\n'));
+  const res = run(root);
+  assert.strictEqual(res.status, 0, `quoted spec with comment must remain discoverable: ${res.stderr}`);
+  ok('a quoted spec with an inline comment satisfies feature-index coverage');
+}
+
 // --- Cases the guard must NOT fire on ------------------------------------
 
 {

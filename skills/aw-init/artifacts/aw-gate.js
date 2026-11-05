@@ -1032,7 +1032,7 @@ function parseIndexFile(text) {
       const m = /^-\s+([A-Za-z0-9_.-]+):\s*(.*)$/.exec(body);
       if (!m) return { error: `line ${i + 1}: list item must open a map ("- key: value")` };
       entry = {};
-      entry[m[1]] = stripYamlQuotes(m[2]);
+      entry[m[1]] = stripYamlQuotes(stripYamlInlineComment(m[2]));
       entries.push(entry);
       continue;
     }
@@ -1040,7 +1040,7 @@ function parseIndexFile(text) {
       const m = /^([A-Za-z0-9_.-]+):\s*(.*)$/.exec(body);
       if (!m) return { error: `line ${i + 1}: expected "key: value" inside a list item` };
       if (!entry) return { error: `line ${i + 1}: field outside any list item` };
-      entry[m[1]] = stripYamlQuotes(m[2]);
+      entry[m[1]] = stripYamlQuotes(stripYamlInlineComment(m[2]));
       continue;
     }
     // A nested list under a field (tags, reviewers). Its items carry no file
