@@ -6,7 +6,11 @@ argument-hint: "[optional focus area, tag filter, or date range]"
 
 # Synthesize Memory
 
-First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-synthesize-memory` (silent no-op otherwise).
+Select mode before tracking. An explicit `review-runs` request reads
+`references/review-runs.md` and returns through that procedure only. It does not
+run normal synthesis, tracking, org sync, retention, wiki regeneration or gates.
+
+For normal synthesis, first action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-synthesize-memory` (silent no-op otherwise).
 
 Convert raw session logs into structured memory and refresh the project context wiki.
 
@@ -46,7 +50,7 @@ docs/context/wiki.md          # destination: regenerated project wiki
 
 ## Workflow
 
-1. Glob `docs/sessions/*.md` and collect logs with frontmatter `status: unprocessed`. There is no session index — logs are self-describing. If a legacy `docs/sessions/index.yml` exists, delete it in this run.
+1. Glob `docs/sessions/*.md` and collect logs with frontmatter `status: unprocessed`. Skip logs with `run_state: active`; unfinished task evidence is not a completed outcome. There is no session index — logs are self-describing. If a legacy `docs/sessions/index.yml` exists, delete it in this run.
 2. Read each unprocessed session log in full.
 3. Read all existing learnings with `status: tentative` from `docs/learnings/` — these need corroboration checking in step 5.
 4. Extract across all new session logs:
@@ -56,18 +60,33 @@ docs/context/wiki.md          # destination: regenerated project wiki
    - **Patterns** — items appearing in two or more sessions.
 5. For each existing `tentative` learning:
    - Check whether any new session log corroborates it (same lesson, same pattern).
-   - If corroborated: increment `evidence-count`, add the corroborating session to `derived-from`, reset `unconfirmed-runs` to 0. If `evidence-count` reaches 3, promote to `status: active`.
+   - If corroborated by a new distinct source: add its identifier to `derived-from`,
+     set `evidence-count` to the unique identifier count and reset `unconfirmed-runs`
+     to 0. At 3 distinct sources, promote to `status: active`. An already-cited
+     live-capture source changes neither the count nor the unconfirmed-run counter.
    - If not corroborated: increment `unconfirmed-runs` by 1. If `unconfirmed-runs` reaches 3, remove the learning file and drop it from `docs/learnings/index.yml`. Do not promote it.
 6. For each new durable pattern extracted in step 4:
    - Check `docs/learnings/index.yml` for an existing learning to update rather than duplicate.
    - If the pattern appears in 3 or more of this batch's session logs, write it directly as `status: active`.
-   - Otherwise write it as `status: tentative` with `evidence-count: 1`.
-   - Always include `derived-from` listing the specific session log paths that support it.
+   - Otherwise write it as `status: tentative`. Set `evidence-count` to the number
+     of unique supporting identifiers (one or two), never a fixed placeholder.
+   - Always include `derived-from` listing the unique final session identifiers
+     that support it, never paths. Resolve historical UUID citations only with an
+     explicit matching source; report unresolved tokens and do not count them as
+     corroboration. Never silently drop evidence. Count each source once, including
+     a source already cited by live capture; do not inflate `evidence-count` when
+     that same log is synthesized later.
    - Update `docs/learnings/index.yml`.
 7. If a pattern appears across three or more sessions (cumulative, including past runs) and looks like an enforceable convention, surface it to the user as a candidate for `docs/standards/`. Do not write the standard without confirmation.
 8. Regenerate `docs/context/wiki.md` in full from the current state of specs, decisions, learnings, and session summaries (see format below). Only `active` learnings appear in the main **Top Learnings** section. `Tentative` learnings appear in a separate **Tentative Learnings** section with minimal detail.
 9. Mark each processed session `status: processed` in its own frontmatter.
-10. Remove processed session logs older than 14 days (or two sprints, whichever is longer) from `docs/sessions/`. Git history is the long-term archive for raw session data.
+10. Remove eligible processed logs older than the retention window only when
+    their current content is preserved in local Git history. For each candidate,
+    verify an exact committed body (allowing only synthesis's `status` change);
+    `git ls-files` alone does not prove the current content was committed. Preserve
+    untracked or changed source evidence with no exact archive, and all active
+    runs. Report skipped removals. Git history is the long-term archive; a local
+    run JSON record and an identifier alone do not back up source evidence.
 
 ## Retention
 

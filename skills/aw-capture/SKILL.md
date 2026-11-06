@@ -1,7 +1,7 @@
 ---
 name: aw-capture
 description: "Capture durable knowledge from the current session: log an immutable decision, save a reusable learning, document a solved problem, or write a session log. Routes by what is being captured. Invoked proactively by agents at natural pauses and automatically by the Claude Code Stop hook for session logging."
-argument-hint: "[decision|learning|solution|session] [context, correction, or description]"
+argument-hint: "[decision|learning|solution|session|run] [context, correction, or description]"
 ---
 
 # Capture
@@ -17,6 +17,7 @@ Determine mode from arguments and context before starting:
 - A product, architecture, API, or workflow choice was made → **Decision**
 - Agent was corrected, interrupted, or redirected; user says "remember", "next time", "you should have" → **Learning**
 - A non-trivial problem was just solved; root cause and fix are clear → **Solution**
+- Explicit opt-in task evidence (`run start` / `run finish`) → read `references/run-evidence.md`
 - A meaningful session just ended or is wrapping up → **Session**
 
 If both Decision and Learning apply, write a decision for the repo fact and a learning for the future agent behavior.
@@ -134,9 +135,19 @@ Use repo-specific storage for lessons tied to this codebase, product, architectu
 2. Decide whether there is a durable lesson. If not, state that no entry is warranted and continue.
 3. Check existing `docs/learnings/index.yml` to avoid duplicates. When `org_knowledge.source` is set in `docs/workflow/config.yml`, run `node .scripts/aw-gate.js org-sync` and also check the org-shared learnings tier (`<org_knowledge.cache_dir>/<paths.learnings>`) so a repo-local lesson does not duplicate an org-wide one. The org tier is governed content: repo-local always wins, entries are advisory unless marked `authority: required`, honor `applies_to`, and treat entries past `review_by` or missing metadata as lower-confidence. Never write to the org tier — if a lesson deserves org-wide status, note it for the human-gated promotion path in `docs/workflow/org-knowledge.md`.
 4. Classify scope: repo-specific or global. When ambiguous, ask one blocking question.
-5. Draft one concise learning and write it.
-6. Update the matching `index.yml`.
-7. Resume the corrected task or summarize the captured learning.
+5. Establish real source provenance **before** writing the learning. Reuse the
+   explicit source identifier when supplied; verify its file and append the
+   correction under **Corrections Made**. Never append to a finished run source.
+   Otherwise allocate a collision-free `YYYY-MM-DD-<slug>` identifier and write a
+   `status: unprocessed` session log using the Session format, including the
+   correction and missed assumption. Check live files and local Git history for
+   identifier reuse. Reuse it at wrap-up. Never guess a slug, cite a tracking UUID,
+   leave `derived-from` empty, or invent sources. This works without tracking or
+   the helper. For existing learnings, append only distinct sources;
+   `evidence-count` counts unique supporting source identifiers.
+6. Draft one concise learning, cite that final source identifier, and write it.
+7. Update the matching `index.yml`.
+8. Resume the corrected task or summarize the captured learning.
 
 ### Learning Format
 
@@ -252,9 +263,17 @@ There is no session index. Session logs are self-describing: `aw-synthesize-memo
 
 1. Review what happened in this session from the conversation and files changed.
 2. Identify: what was attempted, what worked, any user corrections, dead ends hit, and files/sources that were most useful.
-3. Draft the session log using the format below.
-4. Write the file to `docs/sessions/YYYY-MM-DD-<slug>.md` with `status: unprocessed` in the frontmatter, creating `docs/sessions/` if missing.
-5. Report the file written.
+3. If live learning capture or `run start` already allocated a source log, update
+   that exact file in place, preserving its identifier, run metadata, and earlier
+   evidence. Do not duplicate the task log. Never infer a run from
+   `.aw/session`, recency or branch; use the explicit run/source context. If
+   several sources could match, ask which instead of guessing. After a run is
+   finished its source evidence is frozen: start a new run for new work.
+4. Draft the log using the format below, including checks and unknowns under
+   **What Worked** or **Dead Ends**. Do not infer user acceptance
+   from task completion or infer successful checks from skill starts or receipts.
+5. Write the file to `docs/sessions/YYYY-MM-DD-<slug>.md` with `status: unprocessed` in the frontmatter, creating `docs/sessions/` if missing.
+6. Report the file written.
 
 ### Session Log Format
 

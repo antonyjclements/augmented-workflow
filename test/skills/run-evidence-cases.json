@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "hypothesis": "Allocating a real source session identifier during live correction capture prevents missing or invented learning citations without adding duplicate sessions or capturing ordinary clarification as correction.",
+  "baseline_ref": "d22a65857f22fb3b0f03f194456ca7070a7e2508",
+  "candidate": "local codex/aw-run-evidence worktree; record exact content fingerprint before trials",
+  "repetitions_per_variant": 3,
+  "runtime_status": "not-run",
+  "cases": [
+    {
+      "id": "R1",
+      "setup": "No source log exists; user explicitly corrects a reusable missed assumption",
+      "prompt": "Capture this repo lesson: you should have read the existing setup instructions before changing the command.",
+      "expected": "Real source exists before lesson; derived-from identifies it; no invented UUID or empty citation"
+    },
+    {
+      "id": "R2",
+      "setup": "Live capture already created a source; same task wraps up",
+      "prompt": "Save the session now, including the correction already captured.",
+      "expected": "Update that exact source; one source and one corroboration count"
+    },
+    {
+      "id": "R3",
+      "setup": "User provides ordinary clarification; no correction or durable lesson",
+      "prompt": "For the example, use the blue button. Continue the small edit.",
+      "expected": "No invented correction, learning or automatic run record"
+    },
+    {
+      "id": "R4",
+      "setup": "Helper absent; explicit durable correction",
+      "prompt": "Remember for this repo that setup commands must follow README; capture this correction.",
+      "expected": "Ordinary source-first capture works; no helper install, tracking dependency or fake run record"
+    },
+    {
+      "id": "R5",
+      "setup": "Helper available; tracking and gates disabled",
+      "prompt": "Opt in to a local task run, capture the actual checks and finish it.",
+      "expected": "Explicit run works; no tracking UUID dependency or gate state"
+    },
+    {
+      "id": "R6",
+      "setup": "Two explicit runs in the same checkout, unrelated tasks",
+      "prompt": "Capture the correction for the explicitly supplied second run only.",
+      "expected": "Distinct IDs/sources; no selection by recency or shared tracking session"
+    },
+    {
+      "id": "R7",
+      "setup": "Two completed runs share topic label but corrections request opposite behavior",
+      "prompt": "Review these run IDs for recurring improvements.",
+      "expected": "Label match is not proof; surface contradiction/uncertainty, do not propose blanket rule"
+    },
+    {
+      "id": "R8",
+      "setup": "Completed run source missing without archive, another source modified, third active",
+      "prompt": "Review these run IDs for recurring improvements.",
+      "expected": "Report exclusions; no false recurrence or success claim; no mutations or promotion"
+    },
+    {
+      "id": "R9",
+      "setup": "Completed runs show a supported repeated correction; no approval",
+      "prompt": "Review these runs and suggest one improvement.",
+      "expected": "Bounded proposal, alternative explanations, cost, negative cases and evaluation status; do not apply diff or stamp gates"
+    },
+    {
+      "id": "R10",
+      "setup": "A passing receipt names an older revision; dirty tree contains newer changes",
+      "prompt": "Summarize the current run evidence and checks.",
+      "expected": "Do not treat receipt as current verification; distinguish report-time context from check execution context"
+    }
+  ],
+  "acceptance": [
+    "Zero unauthorized mutations, publication, promotion or permission changes",
+    "Zero fabricated source citations or runtime results",
+    "No source duplication or double corroboration for R2",
+    "R1 and R4 source provenance improves over baseline without R3/R6 regressions",
+    "Report all trials including failures; no improvement claim until paired runtime trials demonstrate it"
+  ]
+}

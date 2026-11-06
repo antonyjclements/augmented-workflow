@@ -2,7 +2,7 @@
 title: Workflow Effectiveness Measurement
 status: draft
 created: 2026-08-12
-updated: 2026-08-12
+updated: 2026-11-06
 tags:
   - metrics
   - telemetry
@@ -100,24 +100,18 @@ The two analyses share no pipeline and may be built independently, in either ord
 
 ### Session identity and the audit trail
 
-The audit-trail gap is closed by giving a learning something resolvable to cite at the moment it is written. Skill tracking already mints a session UUID into `tracking.session_file` (`.aw/session`) at the first skill invocation and reuses it while the file's mtime is within `tracking.session_ttl_hours`. That identity exists earlier than the session log's content-derived slug, which is exactly the property the capture path needs.
+The first implementation allocates the final `YYYY-MM-DD-<slug>` source
+identifier at live capture time and writes a concise, unprocessed session log
+before citing it in a learning. Session wrap-up updates that same file. This
+replaces the earlier draft UUID-to-slug approach: a tracking UUID remains approximate
+invocation grouping, not durable evidence or task identity. Parallel tasks use
+explicit run UUIDs and distinct source session identifiers; no global active-run
+pointer or TTL inference selects a run.
 
-The contract has three parts:
-
-1. `aw-capture learning` cites the current session UUID in `derived-from` when no session log exists yet, satisfying the non-empty requirement with a token that can actually be resolved.
-2. `aw-capture session` records the same UUID in the session log's frontmatter when it writes the log.
-3. `aw-synthesize-memory` resolves each UUID to the log's `YYYY-MM-DD-<slug>` identifier and rewrites `derived-from` in place.
-
-The UUID is therefore a **temporary correlation token, never the durable citation**. Durable artifacts still cite `YYYY-MM-DD-<slug>`, which stays resolvable through git history after retention deletes the log — the existing rule is unchanged, and paths remain forbidden.
-
-**Whether this helps a multi-developer team.** It helps, but not in the way the name suggests, and the limits matter:
-
-- The UUID identifies a *session*, not a *person*. It does not provide author attribution, which remains a separate phase-3 concern.
-- Being random and per-checkout, UUIDs cannot collide across developers, so two people working the same feature on the same day get distinct session identities where a date-plus-slug scheme could merge them. No server, shared counter, or coordination is required.
-- Being git-ignored costs nothing here: the token only needs to survive from capture to synthesis within one repo, and it becomes durable the moment a committed session log records it.
-- **Known conflation:** agents running concurrently in the *same* checkout share one `.aw/session` and merge into a single session identity. `docs/workflow/tracking.md` already notes this. Separate worktrees per developer avoid it; concurrent agents in one worktree do not, and that case is getting more common.
-- The TTL makes grouping approximate in both directions: a session spanning the boundary splits into two identities, and two unrelated sessions inside the window merge into one.
-- **A cited UUID that never resolves is worse than an empty field**, because it looks like an audit trail. This happens whenever no session log is written — the Stop hook did not fire and nobody ran `aw-capture session`. Synthesis must report unresolved UUIDs rather than dropping them silently.
+Source logs are summaries, not transcripts. Uncommitted logs have no Git archive;
+retention must preserve them until their content is committed. Historical sources
+are resolved by identifier and content digest, never silently replaced by a newer
+version. An unresolved source is a reported coverage gap, not corroboration.
 
 ### Cross-session misalignment
 
@@ -162,8 +156,11 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 - Each tracked skill records a terminal outcome for its session step, so an abandoned step is distinguishable from a completed one; step duration is derivable within a session.
 - Gate bypasses are recorded as metric events: `--no-receipt`, `Spec-Override:` commit trailers, and `Pin-Override:` commit trailers each emit an event carrying the gate or check bypassed. Field data shows stamps applied without a corresponding skill run, currently detectable only through free-text `detail`, so this signal cannot depend on an agent choosing to describe it.
 - The `detail` field is either constrained to a controlled vocabulary per event type, or documented as human-readable annotation that no aggregation may group by. Observed usage carries at least ten spellings of a single activity, so the current schema cannot support grouping.
-- A learning written mid-session by `aw-capture learning` cites the current `tracking.session_file` UUID, `aw-capture session` records that UUID in the session log's frontmatter, and `aw-synthesize-memory` resolves it to the log's `YYYY-MM-DD-<slug>` identifier and rewrites `derived-from` in place. Durable artifacts continue to cite the slug identifier, never the UUID and never a path.
-- `aw-synthesize-memory` reports session UUIDs in `derived-from` that resolve to no session log instead of dropping them. An unresolvable token looks like an audit trail and is worse than an empty field.
+- A learning written mid-session first creates or updates an actual source session
+  log and cites its final identifier. Session wrap-up updates the same file.
+  Tracking-disabled and helper-free capture work without an invented UUID or citation.
+- Synthesis reports unresolved historical UUID citations without dropping them or
+  counting them as corroboration. New capture uses final identifiers directly.
 - The `derived-from` and `evidence-count` guards run where the data accumulates. `node .scripts/aw-gate.js check` enforces both in any repo with `gates.enabled: true`, so a consuming repo can no longer violate them indefinitely — `scripts/test-install.sh` alone never executes there.
 - Derived state is validated where it accumulates. `node .scripts/aw-gate.js validate` — and `check`, which runs the same rules — reports index entries pointing at missing files, feature specs absent from the features index, wiki references that no longer resolve, session citations written as paths, and index files the parser cannot read. `validate` needs no gate state, so a repo that has not adopted gates can still check its registries.
 - Validation rules that apply to any repo using the workflow have exactly one implementation, in the shipped helper. `scripts/test-install.sh` delegates to it rather than reimplementing it: the duplicated pair had already drifted, and a product test that reimplements the product cannot catch the product being wrong.
@@ -185,7 +182,7 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 - **Not a replacement for review, CI, or human judgement.** As with traceability and workflow trace, this layer is accountability and evidence, not proof of quality.
 - **No external analytics dependency, sink, or vendor** in phases 1 and 2.
 - **No estimation, velocity, or story-point metrics.**
-- **Not a new emission substrate.** This builds on `tracking` and `telemetry` as they exist; it does not introduce a third log.
+- **Not a new automatic emission substrate.** Tracking and telemetry stay unchanged. Explicit local task records supplement the existing source sessions; they are not a second knowledge store or an invocation log.
 
 ## Open Questions / TODOs
 
@@ -196,7 +193,7 @@ Phase 1 is the only phase with a deadline, because it is the only one whose data
 - **Deferred (phase 3):** whether the learning lifecycle gains a `contradicted` outcome distinct from `expired`. Cheap to add, but meaningless until correction polarity can be judged, which depends on the phase-1 equivalence method.
 - **Deferred:** read-through instrumentation — whether agents actually open `docs/learnings/`, `docs/standards/`, and specs before working. Writes are measured, reads are not, which leaves the compounding mechanism partly unfalsifiable. Design cost is materially higher than every other gap here.
 - **Deferred:** whether `aw-synthesize-memory` should compute and commit a periodic metrics rollup, or whether analysis stays wholly external to the repo.
-- **Deferred:** retention interaction — processed session logs are deleted after 14 days, so any correction-clustering method must operate on `docs/learnings/` `derived-from` identifiers rather than on session log bodies.
+- **Resolved for the first slice:** retained source identifiers and content digests allow exact local Git recovery after session removal. Broader correction clustering and its retention policy remain deferred.
 - **Deferred (phase 3):** cross-repo aggregation mechanism — batch clone-and-read, as sketched in `docs/workflow/tracking.md`, versus CI-pushed rollups.
 
 ## Decision Links
@@ -207,3 +204,59 @@ Decisions to log once phase 1 choices are confirmed:
 - Within-repo dose-response over cross-repo comparison for the adoption claim.
 - CI-side outcome join over emitter-side pull-request awareness.
 - Open attribution posture over identity neutralisation in git-tracked metrics.
+
+## First Implemented Slice: Local Evidence and Manual Review
+
+The broader measurement programme above remains draft and is not claimed complete.
+The following bounded requirements define the requested first slice.
+
+### WFE-001 — Explicit local task identity and honest outcomes
+
+An explicit `aw-capture run` route uses `aw-gate run start/finish` to produce an
+ignored `.aw/runs/<UUID>.json` task record and a concise source session log. Run
+identity is independent of invocation tracking and remains stable through finish.
+No automatic recording is enabled. Multiple runs cannot claim the same source
+session. Start never overwrites an existing session; finish never overwrites a
+terminal run. Outcomes distinguish completed, partial, abandoned and unknown;
+unfinished runs remain active. Checks are agent-reported passed/failed/skipped/
+not-run/unknown, with evidence required for observed results and a reason for
+skips. Correction capture is reviewed or unknown; an empty list alone proves
+nothing. Commands described in records are never executed by the helper.
+
+### WFE-002 — Source provenance and privacy
+
+Records contain bounded summaries and session-section citations, not transcripts,
+command output, credentials or personal attribution. Unknown fields are rejected.
+Finish validates section references and records a source digest and observed HEAD,
+branch and dirty state; these identify context, not passing verification. Missing,
+changed or unavailable retained/history sources are excluded from review and
+reported. Session logs remain the existing capture/synthesis input; local records
+are never automatically ingested into the wiki or standards. Local records have
+no Git backup; ignore rules cannot prevent forced adds. Explicit source summaries
+in `docs/sessions/` are versionable under existing capture rules.
+
+### WFE-003 — Opt-in manual recurring-observation review
+
+`aw-synthesize-memory review-runs` reads explicitly selected or all local runs,
+without ordinary synthesis, source edits, gate stamps, telemetry or promotion.
+The helper groups only exact human-supplied topic labels across at least two
+finished, completed, source-verified sessions. Duplicate mentions in one session
+count once. Partial/abandoned/active runs and unresolved evidence are reported
+separately. The skill adjudicates whether the linked concerns actually recur;
+a label match is a retrieval aid, never semantic equivalence or a causal finding.
+Output includes scope/coverage, evidence, alternative explanations, a bounded
+candidate change, expected benefit/cost, falsification and negative cases, and
+explicit evaluation status. No observations is valid. No success-rate or causal
+improvement claim is inferred from invocation counts or missing corrections.
+
+### WFE-004 — Evaluation and adoption boundary
+
+One representative correction-provenance improvement has frozen baseline versus
+candidate scenarios including no correction, helper absent, tracking disabled,
+parallel tasks, and stale/missing source evidence. Compare the same task contexts,
+model/runtime/tools and repetitions in disposable fixtures, preserving actual
+outputs and effects. Deterministic helper tests and instruction checks are labelled
+separately from fresh-agent trials. Unrun trials remain not-run and cannot justify
+an improvement claim. No daemon, automatic promotion, publication, permission
+change or patch application is included. A proposed workflow change requires
+explicit human approval of its concrete diff and evaluation evidence before adoption.

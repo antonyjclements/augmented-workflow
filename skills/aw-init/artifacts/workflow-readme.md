@@ -804,3 +804,67 @@ it does not reset product specs, PRDs, decisions, or user content. Restore any
 separately changed routing/config from its matching backups, verify effective
 providers and discovery, and rerun checks. Rollback requires authorization for
 the target environment. Candidate review receipts are not proof for restored code.
+
+## Local Task Evidence and Manual Review
+
+This is explicitly invoked, local task evidence, separate from invocation counts.
+Install the helper with the existing `aw-init --with-gates` path; tracking and
+freshness gates need not be enabled. The installer ignores `/.aw/runs/`.
+Existing installs must add that narrow ignore rule before opting in. No new
+configuration, network request, scheduled task, permission or automatic promotion.
+
+```sh
+node .scripts/aw-gate.js run start --session YYYY-MM-DD-task-slug --summary "Task attempted"
+# Update the returned source session with actual outcomes and evidence.
+node .scripts/aw-gate.js run finish --id <UUID> --input .aw/tmp/run-report.<token>.json
+node .scripts/aw-gate.js run review
+node .scripts/aw-gate.js run review --ids <UUID,UUID>
+```
+
+`aw-capture run` provides the report schema and procedure. Each run has an explicit
+UUID and a distinct final source session identifier allocated at start; no TTL,
+branch or newest-record inference selects a task. Ordinary live correction capture
+also writes the real source session before a learning cites it, even without the
+helper, and wrap-up updates the same file. Parallel tasks use distinct sources.
+
+Input fields: `outcome` (completed/partial/abandoned/unknown), `summary`,
+`corrections_status` (reviewed/unknown), `checks` and `corrections`. Checks carry
+`name`, `status` (passed/failed/skipped/not-run/unknown), `evidence` for observed
+results and `reason` for unobserved ones. Corrections carry `kind` (correction/rework),
+`topic`, `summary`, and `evidence`. Each evidence object has `session` (this run's
+final source identifier) and `section` (an existing nonempty source section).
+Unknown fields and full-transcript payloads are refused; summaries are bounded,
+but agents must still omit secrets and unnecessary private details. The helper
+never executes a command mentioned in a record or independently certifies a check.
+
+Finish freezes the record and source digest. It records report-time HEAD, branch,
+dirty state and a fingerprint of the index/tracked diff and untracked file contents.
+Ignored files are excluded, snapshots are non-atomic, and unavailable fingerprints
+are null. A report-time fingerprint is not the execution context of every check;
+cite the actual revision/context with check evidence when known, otherwise say
+unknown. Receipts and skill starts are not proof of checks or accepted outcomes.
+
+`aw-synthesize-memory review-runs` branches before ordinary synthesis and returns
+its report in conversation. The CLI provides exact-topic candidates from at least
+two distinct completed, source-verified sessions. The skill adjudicates semantic
+recurrence against existing learnings/specs, reports coverage/unknowns, alternative
+explanations, cost and a bounded change proposal with baseline/candidate and negative
+cases. Topic labels alone are not equivalence or a causal metric. No observations
+is valid. Runtime trials, deterministic checks and unrun cases remain separate.
+Human approval of the concrete diff and evidence is required before adoption.
+Review writes no records, gates, telemetry, wiki, standards or skills.
+
+Active runs are excluded from ordinary synthesis. Completed source logs may gain
+`status: processed` without invalidating evidence. Retention must preserve logs
+whose current content has no exact Git archive. Review can recover matching source
+content from the last 100 local Git revisions touching its identifier after removal;
+changed or unavailable evidence is reported and excluded. No network fetch occurs. Partial/promisor clones refuse start when source history
+cannot be verified offline; review may use live source files but excludes history
+recovery in those clones.
+
+Local `.aw/runs/` records have no Git backup and remain local by default; do not
+automatically ingest them into memory or delete them. Removing an exact local-only
+record needs explicit authorization. Ignore rules do not prevent forced adds.
+Source session summaries remain versionable under the existing separate session
+commit convention. Broader metrics, per-skill terminal events, outcome joins,
+semantic clustering, fresh-agent trial automation and a side process are deferred.

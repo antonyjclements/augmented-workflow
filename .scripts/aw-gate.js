@@ -2680,6 +2680,282 @@ function cmdPin(args) {
   fail('pin requires a subcommand: run or check');
 }
 
+// --- Explicit local task evidence ----------------------------------------
+// Independent of tracking TTLs and gates. Inputs are curated reports, never
+// commands to execute. Session logs remain the source of durable knowledge.
+const RUN_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const RUN_SESSION = /^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const RUN_SECTIONS = ['What Was Attempted', 'What Worked', 'Corrections Made', 'Dead Ends', 'Key Files', 'Open Questions'];
+
+function runRequire(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function runText(value, label, max = 600) {
+  runRequire(typeof value === 'string' && value.trim().length > 0 && value.length <= max &&
+    !/[\x00-\x1f\x7f]/.test(value), `${label} must be a short single-line string (max ${max})`);
+}
+
+function runShape(value, keys, label) {
+  runRequire(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`);
+  for (const key of Object.keys(value)) runRequire(keys.includes(key), `${label}: unsupported field ${key}`);
+}
+
+function runPath(rel) {
+  const abs = resolveRepoPath(rel);
+  runRequire(abs && abs !== repoRoot && !rel.split(/[\\/]/).includes('..') && !rel.includes('\\'), 'run path must stay repo-relative');
+  let cursor = repoRoot;
+  for (const part of path.relative(repoRoot, abs).split(path.sep)) {
+    cursor = path.join(cursor, part);
+    try { runRequire(!fs.lstatSync(cursor).isSymbolicLink(), `symlink refused: ${rel}`); }
+    catch (e) { if (e.code !== 'ENOENT') throw e; }
+  }
+  return abs;
+}
+
+function runRead(rel) {
+  const file = runPath(rel);
+  runRequire(fs.statSync(file).isFile() && fs.statSync(file).size <= 131072, `run input too large or not a file: ${rel}`);
+  return fs.readFileSync(file, 'utf8');
+}
+
+function runWriteLocal(rel, value, create) {
+  const file = runPath(rel);
+  const ignored = runGit(['check-ignore', '--quiet', '--', rel]);
+  runRequire(ignored.status === 0, 'local run storage must be git-ignored and untracked; add /.aw/runs/ to .gitignore');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  if (create) fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+  else {
+    const tmp = runPath(`${rel}.${crypto.randomUUID()}.tmp`);
+    try {
+      fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+      fs.renameSync(tmp, file);
+    } finally { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); }
+  }
+}
+
+function runGit(args) {
+  return gitAt(repoRoot, args, { env: { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_NO_LAZY_FETCH: '1' } });
+}
+
+function runCompleteClone() {
+  const extension = runGit(['config', '--get', 'extensions.partialClone']);
+  const remotes = runGit(['config', '--get-regexp', '^remote\\..*\\.(promisor|partialclonefilter)$']);
+  return extension.status === 1 && remotes.status === 1;
+}
+
+function runContext() {
+  const head = currentCommit();
+  const branch = runGit(['branch', '--show-current']);
+  const dirty = runCompleteClone() ? runGit(['status', '--porcelain', '--untracked-files=normal']) : { status: 1 };
+  const snapshot = crypto.createHash('sha256');
+  let worktree = null;
+  // Capture index + tracked worktree + untracked file contents, never ignored
+  // files, remotes or credentials. This is an observation, not a gate receipt.
+  try {
+    runRequire(runCompleteClone(), 'partial/promisor clone snapshot unavailable offline');
+    const diffs = [runGit(['diff', '--no-ext-diff', '--no-textconv', '--binary']), runGit(['diff', '--cached', '--no-ext-diff', '--no-textconv', '--binary'])];
+    const files = runGit(['ls-files', '-z', '--others', '--exclude-standard']);
+    runRequire(dirty.status === 0 && files.status === 0 && diffs.every(r => r.status === 0), 'Git snapshot unavailable');
+    snapshot.update(JSON.stringify([head, dirty.stdout, ...diffs.map(r => r.stdout)]));
+    for (const rel of files.stdout.split('\0').filter(Boolean).sort()) {
+      const file = runPath(rel);
+      runRequire(fs.statSync(file).isFile(), 'untracked non-file in snapshot');
+      snapshot.update(JSON.stringify([rel, fs.statSync(file).mode, fs.statSync(file).size]));
+      const fd = fs.openSync(file, 'r');
+      try {
+        const chunk = Buffer.alloc(65536);
+        let size;
+        while ((size = fs.readSync(fd, chunk, 0, chunk.length, null)) > 0) snapshot.update(chunk.subarray(0, size));
+      } finally { fs.closeSync(fd); }
+    }
+    worktree = snapshot.digest('hex');
+  } catch (_) { /* Unknown is honest; no partial fingerprint masquerades as identity. */ }
+  return { head, branch: branch.status === 0 ? branch.stdout.trim() || null : null,
+    dirty: dirty.status === 0 ? dirty.stdout.length > 0 : null, worktree_sha256: worktree,
+    limitations: 'non-atomic observation; ignored files excluded; check execution state not inferred' };
+}
+
+function runDigest(text) { return crypto.createHash('sha256').update(text).digest('hex'); }
+
+function runSection(text, section) {
+  const heading = `## ${section}\n`;
+  const start = text.indexOf(`\n${heading}`);
+  if (start === -1) return '';
+  return text.slice(start + 1 + heading.length).split(/\n## /)[0].trim();
+}
+
+function runValidateReport(report, session, text) {
+  runShape(report, ['outcome', 'summary', 'checks', 'corrections', 'corrections_status'], 'report');
+  runRequire(['completed', 'partial', 'abandoned', 'unknown'].includes(report.outcome), 'invalid outcome');
+  runText(report.summary, 'summary');
+  runRequire(['reviewed', 'unknown'].includes(report.corrections_status), 'corrections_status must be reviewed or unknown');
+  for (const field of ['checks', 'corrections']) runRequire(Array.isArray(report[field]) && report[field].length <= 50, `${field} must be a bounded array`);
+  const evidence = (ref) => {
+    runShape(ref, ['session', 'section'], 'evidence');
+    runRequire(ref.session === session && RUN_SECTIONS.includes(ref.section), 'evidence must cite this run source session and a known section');
+    const body = runSection(text, ref.section);
+    runRequire(body && body !== '_none_', `evidence section has no content: ${ref.section}`);
+  };
+  for (const check of report.checks) {
+    runShape(check, ['name', 'status', 'evidence', 'reason'], 'check');
+    runText(check.name, 'check name', 200);
+    runRequire(['passed', 'failed', 'skipped', 'not-run', 'unknown'].includes(check.status), 'invalid check status');
+    if (['passed', 'failed'].includes(check.status)) evidence(check.evidence);
+    else runText(check.reason, 'unobserved check reason');
+    if (check.evidence) evidence(check.evidence);
+    if (check.reason !== undefined) runText(check.reason, 'check reason');
+  }
+  for (const correction of report.corrections) {
+    runShape(correction, ['kind', 'topic', 'summary', 'evidence'], 'correction');
+    runRequire(['correction', 'rework'].includes(correction.kind), 'invalid correction kind');
+    runRequire(typeof correction.topic === 'string' && /^[a-z][a-z0-9-]{0,79}$/.test(correction.topic), 'topic must be a short explicit label');
+    runText(correction.summary, 'correction summary');
+    runRequire(correction.evidence && ['Corrections Made', 'Dead Ends'].includes(correction.evidence.section), 'correction evidence must cite Corrections Made or Dead Ends');
+    evidence(correction.evidence);
+  }
+}
+
+function runLoad(id) {
+  runRequire(RUN_UUID.test(id), 'invalid run UUID');
+  const record = JSON.parse(runRead(`.aw/runs/${id}.json`));
+  runShape(record, ['schema_version', 'run_id', 'session_id', 'started_at', 'finished_at', 'status', 'start_context', 'finish_context', 'summary', 'report', 'source_sha256'], 'run');
+  runRequire(record.schema_version === 1 && record.run_id === id && RUN_SESSION.test(record.session_id), 'invalid run identity/schema');
+  runRequire(['active', 'finished'].includes(record.status), 'invalid run status');
+  return record;
+}
+
+function runStart(flags) {
+  runRequire(RUN_SESSION.test(flags.session), '--session must be YYYY-MM-DD-lowercase-slug');
+  runText(flags.summary, '--summary', 200);
+  const id = crypto.randomUUID();
+  const rel = `docs/sessions/${flags.session}.md`;
+  const file = runPath(rel);
+  runRequire(!fs.existsSync(file), 'source session already exists; choose a distinct identifier');
+  // Validate local ignore policy before creating even the source stub.
+  runPath('.aw/runs');
+  runRequire(runGit(['check-ignore', '--quiet', '--', `.aw/runs/${id}.json`]).status === 0,
+    'local run storage must be git-ignored and untracked; add /.aw/runs/ to .gitignore');
+  // Also prevent reuse of a retained/history-only source identifier.
+  runRequire(runCompleteClone(), 'partial/promisor clone cannot verify source history offline');
+  const history = runGit(['log', '-1', '--format=%H', '--', rel]);
+  runRequire((history.status === 0 && !history.stdout.trim()) || currentCommit() === null,
+    'source identifier has Git history; choose a distinct identifier');
+  const dir = runPath('.aw/runs');
+  if (fs.existsSync(dir)) for (const name of fs.readdirSync(dir).filter(n => n.endsWith('.json'))) {
+    const previous = runLoad(name.slice(0, -5));
+    runRequire(previous.session_id !== flags.session, 'source session is already assigned to a run');
+  }
+  const record = { schema_version: 1, run_id: id, session_id: flags.session, summary: flags.summary,
+    status: 'active', started_at: new Date().toISOString(), start_context: runContext() };
+  const source = `---\ntitle: ${JSON.stringify(flags.summary)}\ndate: ${flags.session.slice(0, 10)}\nstatus: unprocessed\nrun_id: ${id}\nrun_state: active\ntags: []\n---\n\n${RUN_SECTIONS.map(s => `## ${s}\n\n_none_\n`).join('\n')}`;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, source, { flag: 'wx' });
+  runWriteLocal(`.aw/runs/${id}.json`, record, true);
+  return record;
+}
+
+function runFinish(flags) {
+  const record = runLoad(flags.id);
+  runRequire(record.status === 'active', 'terminal run is immutable; start a new run for new work');
+  const report = JSON.parse(runRead(flags.input));
+  const rel = `docs/sessions/${record.session_id}.md`;
+  const original = runRead(rel);
+  runRequire(original.startsWith('---\n'), 'source session frontmatter missing');
+  const header = original.split(/^---\s*$/m)[1] || '';
+  for (const key of ['run_id', 'run_state', 'status']) runRequire(
+    header.split('\n').filter(line => line.startsWith(`${key}:`)).length === 1, `source must have exactly one ${key}`);
+  const fm = parseYaml(header);
+  runRequire(fm.run_id === record.run_id && fm.run_state === 'active' && fm.status === 'unprocessed', 'source session identity/state mismatch');
+  runValidateReport(report, record.session_id, original);
+  const source = original.replace(/^run_state:[^\n]*$/m, 'run_state: finished')
+    .replace(/^status:[^\n]*$/m, 'status: unprocessed');
+  const result = { ...record, status: 'finished', finished_at: new Date().toISOString(),
+    finish_context: runContext(), report, source_sha256: runDigest(source) };
+  // Write source first. If a local write fails, restore the active marker so an
+  // explicit retry can finish; never claim completion on an uncertain write.
+  fs.writeFileSync(runPath(rel), source);
+  try { runWriteLocal(`.aw/runs/${record.run_id}.json`, result, false); }
+  catch (e) { fs.writeFileSync(runPath(rel), original); throw e; }
+  return result;
+}
+
+function runResolveSource(record) {
+  const rel = `docs/sessions/${record.session_id}.md`;
+  // Ignore only synthesis-owned frontmatter changes for evidence identity.
+  const digest = (text) => runDigest(text.replace(/^status: processed$/m, 'status: unprocessed'));
+  if (fs.existsSync(runPath(rel))) {
+    const text = runRead(rel);
+    runRequire(digest(text) === record.source_sha256, 'source changed since finish');
+    return { text, location: 'working-tree' };
+  }
+  // Retention can remove a committed log. Recover exact content from local Git
+  // history; never fetch, trust a replacement, or store a transcript snapshot.
+  runRequire(runCompleteClone(), 'source history unavailable offline in partial/promisor clone');
+  const history = runGit(['log', '-100', '--format=%H', '--', rel]);
+  if (history.status === 0) for (const revision of history.stdout.trim().split('\n').filter(Boolean)) {
+    const result = runGit(['show', `${revision}:${rel}`]);
+    if (result.status === 0 && digest(result.stdout) === record.source_sha256) return { text: result.stdout, location: `git:${revision}` };
+  }
+  throw new Error('source unavailable in working tree or last 100 local Git revisions');
+}
+
+function runReview(flags) {
+  const dir = runPath('.aw/runs');
+  const ids = flags.ids ? flags.ids.split(',') : fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter(n => n.endsWith('.json')).map(n => n.slice(0, -5)).sort() : [];
+  runRequire(ids.every(id => RUN_UUID.test(id)) && new Set(ids).size === ids.length, 'invalid or duplicate selected run UUID');
+  const report = { schema_version: 1, scope: ids, basis: 'agent-reported; source identity verified, truth not independently verified',
+    coverage: { completed: 0, capture_reviewed: 0, capture_unknown: 0 }, excluded: [], observations: [],
+    evaluation: 'not-run', adoption: 'requires explicit human approval of concrete diff and evaluation evidence' };
+  const topics = new Map();
+  const sessions = new Set();
+  for (const id of ids) {
+    try {
+      const record = runLoad(id);
+      if (record.status !== 'finished' || !record.report || record.report.outcome !== 'completed') {
+        report.excluded.push({ run_id: id, reason: record.report ? record.report.outcome : 'active' }); continue;
+      }
+      runRequire(!sessions.has(record.session_id), 'duplicate source session; not independent evidence');
+      const source = runResolveSource(record);
+      runValidateReport(record.report, record.session_id, source.text);
+      sessions.add(record.session_id);
+      report.coverage.completed += 1;
+      report.coverage[record.report.corrections_status === 'reviewed' ? 'capture_reviewed' : 'capture_unknown'] += 1;
+      for (const topic of new Set(record.report.corrections.map(c => c.topic))) {
+        if (!topics.has(topic)) topics.set(topic, []);
+        topics.get(topic).push({ run_id: id, session: record.session_id, source: source.location,
+          source_sha256: record.source_sha256, finish_context: record.finish_context, checks: record.report.checks, concerns: record.report.corrections.filter(c => c.topic === topic) });
+      }
+    } catch (e) { report.excluded.push({ run_id: id, reason: e.message }); }
+  }
+  for (const [topic, evidence] of [...topics].sort(([a], [b]) => a.localeCompare(b))) if (evidence.length >= 2) {
+    report.observations.push({ topic, distinct_sessions: evidence.length, evidence,
+      interpretation: 'candidate recurrence; exact label match requires semantic adjudication',
+      alternative_explanations: ['different task mix or requirements', 'one incident split across sessions', 'summary or topic-label error'],
+      proposal_status: 'needs bounded proposal and baseline/candidate evaluation; no change applied' });
+  }
+  return report;
+}
+
+function cmdRun(args) {
+  try {
+    const [sub, ...rest] = args;
+    const allowed = { start: ['session', 'summary'], finish: ['id', 'input'], review: ['ids'] }[sub];
+    runRequire(allowed, 'run requires start, finish or review');
+    const flags = {};
+    for (let i = 0; i < rest.length; i += 2) {
+      const key = rest[i].slice(2);
+      runRequire(rest[i].startsWith('--') && allowed.includes(key) && !Object.hasOwnProperty.call(flags, key) &&
+        typeof rest[i + 1] === 'string' && !rest[i + 1].startsWith('--'), 'invalid run flags');
+      flags[key] = rest[i + 1];
+    }
+    if (sub !== 'review') for (const key of allowed) runRequire(flags[key], `missing --${key}`);
+    const result = sub === 'start' ? runStart(flags) : sub === 'finish' ? runFinish(flags) : runReview(flags);
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  } catch (e) { fail(`run: ${e.message}`); }
+}
+
 function isSafeGitRef(ref) {
   return typeof ref === 'string' &&
     /^[A-Za-z0-9._/-]+$/.test(ref) &&
@@ -2752,6 +3028,9 @@ function usage() {
       '  node .scripts/aw-gate.js workflow-check [--base <ref>] [--since-commit <ref>] [--json]',
       '  node .scripts/aw-gate.js pin run [--json] [--out <path>]',
       '  node .scripts/aw-gate.js pin check [--base <ref>] [--json]',
+      '  node .scripts/aw-gate.js run start --session YYYY-MM-DD-slug --summary text',
+      '  node .scripts/aw-gate.js run finish --id <UUID> --input <repo-relative-report.json>',
+      '  node .scripts/aw-gate.js run review [--ids <UUID,UUID>]',
       '  node .scripts/aw-gate.js org-sync',
       '  node .scripts/aw-gate.js prune-telemetry',
       '  node .scripts/aw-gate.js track <skill>',
@@ -2769,6 +3048,8 @@ function usage() {
 function main() {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
+    case 'run':
+      return cmdRun(rest);
     case 'receipt':
       return cmdReceipt(rest);
     case 'record':

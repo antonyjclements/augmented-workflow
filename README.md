@@ -892,6 +892,22 @@ Use aw-capture session to record what was attempted, what worked, any correction
 
 # synthesis (any agent, run periodically)
 After a sprint or when several unprocessed session logs have accumulated, use aw-synthesize-memory to distill logs into learnings and regenerate docs/context/wiki.md.
+
+For an opt-in task evidence record, use `aw-capture run start` and
+`aw-capture run finish`. The helper (`aw-init --with-gates`) writes an ignored
+`.aw/runs/<UUID>.json` alongside an ordinary concise source session log. Tracking
+and gates may remain disabled. The run UUID is explicit task identity; the
+tracking TTL session is not. Outcomes and checks are agent-reported, with unknowns
+preserved. No transcripts or command output are copied by default.
+
+Use `aw-synthesize-memory review-runs` for a manual review across completed local
+runs, optionally naming exact run IDs. It returns evidence-backed observations,
+alternative explanations and bounded proposals in conversation, without normal
+synthesis or promotion. A proposal needs a concrete diff, baseline/candidate
+evaluation and explicit human approval before adoption. No daemon or automatic
+changes are enabled. See [the CLI and evidence contract](docs/workflow/README.md#local-task-evidence-and-manual-review)
+and [the frozen comparison protocol](test/skills/run-evidence-evaluation.md).
+
 ```
 
 ### PR Readiness

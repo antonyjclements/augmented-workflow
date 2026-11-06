@@ -12,6 +12,14 @@ version has no entry here.
 
 ## [Unreleased]
 
+### Added
+
+- Explicit local task evidence through `aw-capture run start/finish`, with stable
+  run IDs, source-linked corrections and reported checks. Manually invoke
+  `aw-synthesize-memory review-runs` for recurring observations and bounded
+  improvement proposals; adoption requires human approval. No background worker
+  or automatic promotion is enabled.
+
 ### Fixed
 
 - Validate indexed documentation paths with trailing YAML comments correctly:

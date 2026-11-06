@@ -30,3 +30,6 @@ node_modules/
 # Isolated feature worktrees created by aw-create-worktree
 .worktrees/
 /.aw/workstreams/
+
+# Explicit local task evidence (not a transcript or a knowledge store)
+/.aw/runs/
