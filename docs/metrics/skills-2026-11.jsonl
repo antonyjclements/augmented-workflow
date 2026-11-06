@@ -5,3 +5,10 @@
 {"ts":"2026-11-05T02:41:59.346Z","session_id":"4fd0bd0a-bfeb-488e-ba45-037ba3993db0","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"aw-path-comments-20261105","workflow_step":"commit"}
 {"ts":"2026-11-05T02:43:24.670Z","session_id":"4fd0bd0a-bfeb-488e-ba45-037ba3993db0","skill":"aw-check-workflow-compliance","source":"skill","workflow_step":"check_workflow_compliance"}
 {"ts":"2026-11-05T02:43:24.896Z","session_id":"4fd0bd0a-bfeb-488e-ba45-037ba3993db0","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"aw-path-comments-20261105","workflow_step":"commit"}
+{"ts":"2026-11-06T01:45:32.703Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-work","source":"skill","workflow_step":"work"}
+{"ts":"2026-11-06T01:45:33.228Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-plan","source":"skill","workflow_step":"plan"}
+{"ts":"2026-11-06T02:00:10.981Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-review","source":"skill","workflow_step":"review"}
+{"ts":"2026-11-06T02:02:57.667Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-check-workflow-compliance","source":"skill","workflow_step":"check_workflow_compliance"}
+{"ts":"2026-11-06T02:33:39.900Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-ship","source":"skill","schema_version":2,"event":"invocation","mode":"full-pr","invocation_id":"3c456078-abb8-4163-8a3a-036c105c315d","workflow_step":"commit_push_pr"}
+{"ts":"2026-11-06T02:33:39.922Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"3c456078-abb8-4163-8a3a-036c105c315d","workflow_step":"commit_push_pr"}
+{"ts":"2026-11-06T02:33:39.948Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"3c456078-abb8-4163-8a3a-036c105c315d","workflow_step":"commit"}
