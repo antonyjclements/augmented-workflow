@@ -38,10 +38,12 @@
 //   workflow-check  Deterministically validate required workflow breadcrumbs.
 //   pin             Run/check behavior pins: two-sided characterization harnesses
 //                   that prove a new implementation still matches the old one.
+//   workspace       Resolve the workspace marker from the current directory.
 //
 // Zero runtime dependencies. Node >= 16.
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync, spawnSync } = require('child_process');
@@ -388,6 +390,82 @@ function parseFlags(args) {
     }
   }
   return { positional, flags };
+}
+
+// --- Workspace resolution ------------------------------------------------
+const WORKSPACE_MARKER = 'aw-workspace.yml';
+const WORKSPACE_MAX_PARENTS = 12;
+
+function workspaceMarkerStat(dir) {
+  try {
+    const stat = fs.lstatSync(path.join(dir, WORKSPACE_MARKER));
+    return stat.isFile() ? stat : null;
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+    throw error;
+  }
+}
+
+function discoverWorkspaceRoot(cwd) {
+  if (typeof process.getuid !== 'function') return null;
+
+  const uid = process.getuid();
+  let home = os.homedir();
+  try {
+    home = fs.realpathSync(home);
+  } catch (error) {
+    if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
+  }
+  let dir = cwd;
+  for (let level = 0; level <= WORKSPACE_MAX_PARENTS && dir !== home; level += 1) {
+    if (workspaceMarkerStat(dir)?.uid === uid) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+// @spec AWSPACE-001, AWSPACE-002
+function cmdWorkspace(args) {
+  const { positional, flags } = parseFlags(args);
+  if (positional.length || Object.keys(flags).some((key) => !['workspace-root', 'json'].includes(key))
+      || (flags.json !== undefined && flags.json !== true)) {
+    fail('usage: workspace [--workspace-root <dir>] [--json]');
+  }
+  const flagRoot = flags['workspace-root'];
+  if (flagRoot !== undefined && (typeof flagRoot !== 'string' || flagRoot === '')) {
+    fail('workspace: --workspace-root requires a directory');
+  }
+  const envRoot = process.env.AW_WORKSPACE_ROOT;
+  const override = flagRoot ?? envRoot;
+  let workspaceRoot;
+  try {
+    if (override) {
+      workspaceRoot = fs.realpathSync(override);
+      if (!workspaceMarkerStat(workspaceRoot)) {
+        fail(`workspace: ${workspaceRoot} must contain a regular ${WORKSPACE_MARKER}`);
+      }
+    } else {
+      workspaceRoot = discoverWorkspaceRoot(process.cwd());
+    }
+  } catch (error) {
+    fail(`workspace: ${error.message}`);
+  }
+
+  const source = workspaceRoot ? (flagRoot ? 'flag' : envRoot ? 'env' : 'marker') : null;
+  if (flags.json) {
+    process.stdout.write(JSON.stringify({
+      mode: workspaceRoot ? 'workspace' : 'repo',
+      workspaceRoot,
+      marker: workspaceRoot ? path.join(workspaceRoot, WORKSPACE_MARKER) : null,
+      source,
+    }) + '\n');
+  } else {
+    process.stdout.write(workspaceRoot
+      ? `aw-gate: workspace mode (${source}): ${workspaceRoot}\n`
+      : 'aw-gate: repository mode\n');
+  }
 }
 
 // --- Workflow execution trace -------------------------------------------
@@ -3028,6 +3106,7 @@ function usage() {
       '  node .scripts/aw-gate.js workflow-check [--base <ref>] [--since-commit <ref>] [--json]',
       '  node .scripts/aw-gate.js pin run [--json] [--out <path>]',
       '  node .scripts/aw-gate.js pin check [--base <ref>] [--json]',
+      '  node .scripts/aw-gate.js workspace [--workspace-root <dir>] [--json]',
       '  node .scripts/aw-gate.js run start --session YYYY-MM-DD-slug --summary text',
       '  node .scripts/aw-gate.js run finish --id <UUID> --input <repo-relative-report.json>',
       '  node .scripts/aw-gate.js run review [--ids <UUID,UUID>]',
@@ -3068,6 +3147,8 @@ function main() {
       return cmdWorkflowCheck(rest);
     case 'pin':
       return cmdPin(rest);
+    case 'workspace':
+      return cmdWorkspace(rest);
     case 'org-sync':
       return cmdOrgSync();
     case 'prune-telemetry':

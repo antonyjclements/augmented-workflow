@@ -8,7 +8,18 @@ argument-hint: "[Workstream ID/path, plan/spec/ticket, or description. Blank res
 
 Execute a plan, spec, or bare work request through implementation, verification, review, and shipping readiness.
 
-First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-work` (silent no-op otherwise).
+## Repository Scope
+
+Before reading workflow config, resolve workspace mode using
+`aw-gate.js workspace --json` and the Multi-Repository Workspaces procedure in
+`docs/workflow/README.md`. Pass an explicit `--workspace-root <dir>` to the
+helper when supplied. In workspace mode, coordinate the shared task and apply
+the following phases from each touched repository using its own guidance,
+test policy, configured work provider, and checks. Keep evidence attributable
+to the checkout that produced it. Repository mode uses the current checkout.
+
+In each in-scope repo, if `.scripts/aw-gate.js` exists, run
+`node .scripts/aw-gate.js track aw-work` (silent no-op otherwise).
 
 ## Input
 

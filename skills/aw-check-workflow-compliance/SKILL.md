@@ -6,8 +6,6 @@ argument-hint: "[optional: plan/spec/ticket path or branch ref]"
 
 # Check Workflow Compliance
 
-First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-check-workflow-compliance` (silent no-op otherwise).
-
 Review workflow-policy evidence for scoped local changes before publication. This audit does not require a push, upstream branch, or remote access. This is an accountability check, not a security sandbox, and it does not replace CI or `aw-review`.
 
 ## Inputs
@@ -29,6 +27,16 @@ report insufficient scope instead of inventing compliance. Do not fetch or push
 just to make the audit runnable.
 
 ## Configuration
+
+Before reading workflow config, resolve workspace mode with
+`aw-gate.js workspace --json` using the Multi-Repository Workspaces procedure in
+`docs/workflow/README.md`. Pass an explicit `--workspace-root <dir>` to the
+helper when supplied. Audit each touched repository independently using its
+own config, base and diff. Report verdicts, publication status and any gate
+receipts per checkout. Apply the same procedure to the current repo in repo mode.
+
+In each audited repo, if `.scripts/aw-gate.js` exists, run
+`node .scripts/aw-gate.js track aw-check-workflow-compliance` (silent no-op otherwise).
 
 Read `docs/workflow/config.yml` first.
 

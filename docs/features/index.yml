@@ -1,4 +1,11 @@
 features:
+  - key: multi-repo-workspace
+    title: Multi-Repository Workspaces
+    spec: docs/features/multi-repo-workspace/spec.md
+    status: active
+    tags:
+      - workflow
+      - workspace
   - key: product-feedback
     title: Product Feedback Triage
     spec: docs/features/product-feedback/spec.md

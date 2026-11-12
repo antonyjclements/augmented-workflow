@@ -36,6 +36,17 @@ run tests, applications or screenshot/evidence capture that can mutate state.
 Only description-update may mutate the explicitly authorized target PR text,
 after its preview confirmation. Keep these limits across every reference and tool.
 
+## Repository Scope
+
+For local-commit and full-PR modes, before reading workflow config or tracking,
+resolve workspace mode with `aw-gate.js workspace --json` using the
+Multi-Repository Workspaces procedure in `docs/workflow/README.md`. Pass an
+explicit `--workspace-root <dir>` to the helper when supplied. Run the selected
+mode independently in each touched repo covered by the user's shipping request.
+Resolve that repo's config, branch, remote, scoped changes, providers, and
+evidence before taking action there. Report results per repository. Description
+modes continue to use the requested PR target and their read-only procedure.
+
 ## Stage Providers
 
 Read `docs/workflow/config.yml` if present. Preserve

@@ -377,6 +377,13 @@ Create Jira tickets from this plan, using the configured ticket creation skill.
 
 Workflow step overrides, implementation test policy, design hooks, and related behavior are configured in `docs/workflow/config.yml`. Most repos should leave skill overrides blank; blank values use the bundled defaults.
 
+For a task that spans sibling Git repos, put an `aw-workspace.yml` marker in
+their shared parent. Install the helper with `aw-init --with-gates` if needed.
+Use `node .scripts/aw-gate.js workspace --json` from a checkout with the
+current helper to verify the workspace. `aw-work`, `aw-ship`,
+and `aw-check-workflow-compliance` then use each touched repo's own workflow
+config. See the [workspace setup and resolution rules](docs/workflow/README.md#multi-repository-workspaces).
+
 Minimal example:
 
 ```yaml

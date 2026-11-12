@@ -584,6 +584,53 @@ execution; see `tracking.md`. Provider handoffs carry the invocation identifier,
 actual stage and mode, and suppress duplicate public-invocation records.
 Historical records retain their original names and interpretation.
 
+## Multi-Repository Workspaces
+
+Place a regular `aw-workspace.yml` file in the directory that contains your
+checkouts. An empty file is enough. From the directory where the task starts,
+run a trusted, current AW helper, using its path from a checkout that has it
+installed. For example, from the parent of `shell` and `frontend`:
+
+```sh
+touch aw-workspace.yml
+node shell/.scripts/aw-gate.js workspace --json
+```
+
+The resolver checks `--workspace-root <dir>` first, then
+`AW_WORKSPACE_ROOT`, then the nearest marker owned by the current user.
+Overrides point to a directory with a regular marker. Relative values are
+resolved from the invocation directory. Invalid overrides fail with a
+diagnostic. Automatic discovery starts at the current directory, crosses
+Git boundaries, and checks up to 12 parents, stopping before the home
+directory or after the filesystem root. Platforms without a UID require an
+explicit root. The marker's contents are unused.
+
+JSON output contains `mode` (`workspace` or `repo`), `workspaceRoot`,
+`marker`, and `source` (`flag`, `env`, or `marker`). The last three fields
+are null in repo mode. The resolver performs no writes and works independently
+of the helper's installed repository and its workflow config.
+
+For `aw-work`, `aw-ship` (commit and PR modes), and
+`aw-check-workflow-compliance`, run this probe once from the original task
+directory before applying repo policy. Reuse the result in repo-specific
+handoffs. If the helper is missing or predates `workspace`, continue in repo
+mode for a single-repo task. For explicit workspace or multi-repo work, report
+the unavailable resolver or invalid override before routing the task.
+
+In workspace mode, identify touched repos from the task's paths, named repos
+and work evidence. For each, use Git from the checkout or the nearest existing
+directory of a task path to confirm its checkout root
+(`git -C <dir> rev-parse --show-toplevel`). Deduplicate canonical roots under
+the workspace, using directory boundaries for containment. Flag any scope
+outside the workspace before routing it. A dirty sibling is in scope only when
+its changes belong to the task.
+
+Read each touched repo's own `AGENTS.md` and `docs/workflow/config.yml`, using
+the bundled defaults for missing config. Resolve providers and run Git,
+tracking, checks and receipts from that repo, passing along its authorized
+paths and local evidence. Scope commits, pushes and PRs to what the user
+authorized in each repo. The workspace does not confer publishing authority.
+
 ## Shipping Modes and Independent Providers
 
 `aw-ship` selects mode before loading procedures or emitting tracking. An explicit

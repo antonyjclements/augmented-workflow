@@ -14,6 +14,10 @@ version has no entry here.
 
 ### Added
 
+- Multi-repository workspaces through `aw-gate.js workspace` and an
+  `aw-workspace.yml` marker. Work, shipping, and compliance use the
+  workflow config of each repository touched by the task.
+
 - Explicit local task evidence through `aw-capture run start/finish`, with stable
   run IDs, source-linked corrections and reported checks. Manually invoke
   `aw-synthesize-memory review-runs` for recurring observations and bounded

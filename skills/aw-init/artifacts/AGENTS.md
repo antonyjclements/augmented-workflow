@@ -58,6 +58,7 @@ handoff. Never automatically ingest active progress into memory or synthesis.
 
 ## Workflow Step Routing
 
+- For workspace work, shipping, or compliance, resolve the touched repositories before selecting their workflow providers. See Multi-Repository Workspaces in `docs/workflow/README.md`.
 - Read `docs/workflow/config.yml` before invoking a configurable step. A configured `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` replaces the bundled default; blank means use the default. See `docs/workflow/README.md` for key maps, contracts, and legacy migration.
 - When `workflow.design.enabled` is true, run configured non-empty design hooks at their documented checkpoints; design reference material usually lives in `docs/standards/`.
 - Read `workflow.implementation.test_policy` before implementation; blank defaults to `acceptance-first`. Follow the policy described in `docs/workflow/README.md`.
