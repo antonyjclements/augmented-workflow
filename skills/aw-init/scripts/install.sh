@@ -164,14 +164,21 @@ fetch_remote_source() {
 
   tar -xzf "$archive" -C "$extract_dir"
 
-  local candidate
-  candidate="$(find "$extract_dir" -maxdepth 3 -type d -name skills -print -quit)"
+  local candidate="" version_file
+  # A source archive also contains test/skills. Require the version marker and
+  # bundled installer in the same tree before treating a directory as the root.
+  while IFS= read -r version_file; do
+    if [ -f "${version_file%/*}/skills/aw-init/scripts/install.sh" ]; then
+      candidate="${version_file%/*}"
+      break
+    fi
+  done < <(find "$extract_dir" -maxdepth 3 -type f -name aw-version.txt -print)
   if [ -z "$candidate" ]; then
-    echo "remote source did not contain a skills directory: $url" >&2
+    echo "remote source did not contain an augmented-workflow source tree: $url" >&2
     exit 1
   fi
 
-  source_dir="$(cd "$(dirname "$candidate")" && pwd)"
+  source_dir="$(cd "$candidate" && pwd)"
   skill_dir="$source_dir/skills/aw-init"
   artifact_dir="$skill_dir/artifacts"
   echo "remote source: $url -> $source_dir"
