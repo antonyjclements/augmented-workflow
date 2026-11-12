@@ -110,7 +110,7 @@ Avoid:
 
 - Hype about replacing people.
 - Vague autonomy claims.
-- Mascots or playful metaphors.
+- Mascot dialogue or playful metaphors that obscure concrete workflow guidance.
 - Overpromising deterministic results from probabilistic systems.
 
 ### Writing Discipline
@@ -191,3 +191,54 @@ Do not:
 - Put the tagline in tiny placements where it cannot be read.
 - Describe Augmented Workflow as an AI coding tool, IDE, or project management system.
 - Use retired brand names in current marketing, docs, installer output, or badges.
+
+
+## Wren Mascot
+
+Wren is the approved AW mascot: an observant, capable companion that carries work forward. Its folded-paper geometry complements the AW mark. The monogram remains the primary identifier; Wren is a companion illustration.
+
+### Character System
+
+Keep the compact bird silhouette, short beak, upright tail, and violet wing fold consistent. Light-surface artwork uses a navy body and off-white breast. Dark-surface artwork uses an off-white body, pale gray folds, navy breast, dark eye, and light beak and feet. Larger illustrations include a violet thread representing continuity. Use the supplied artwork rather than independently redrawing poses.
+
+| Pose | For light backgrounds | For dark backgrounds | Suggested use |
+| --- | --- | --- | --- |
+| Alert | [PNG](assets/wren/wren-alert.png) | [PNG](assets/wren/wren-alert-dark.png) | Introductions and general brand placements |
+| In flight | [PNG](assets/wren/wren-in-flight.png) | [PNG](assets/wren/wren-in-flight-dark.png) | Progress and carrying work forward |
+| Gathering | [PNG](assets/wren/wren-gathering.png) | [PNG](assets/wren/wren-gathering-dark.png) | Capturing context and learnings |
+| Perched | [PNG](assets/wren/wren-perched.png) | [PNG](assets/wren/wren-perched-dark.png) | Reflection, reference, and completed work |
+
+These are raster illustrations on transparent canvases. Keep the full canvas when consistent alignment matters. Avoid enlarging beyond their native resolution. Place navy illustrations on light surfaces and the matching light-colored poses directly on dark surfaces. Dark-surface filenames end in `-dark.png`; the suffix describes the intended background. All four dark-surface poses have transparent backgrounds and require no panel. The approved alert artwork remains the source for the dark logo lockup.
+
+### Small Icons
+
+Use the dedicated simplified alert silhouette at small sizes. It removes the thread and fine paper detail, thickens the feet, and preserves the upright tail and violet fold. Do not shrink the detailed illustrations into icons.
+
+| Background | 32 × 32 pixels | 64 × 64 pixels |
+| --- | --- | --- |
+| Light | [PNG](assets/wren/wren-icon-light-32.png) | [PNG](assets/wren/wren-icon-light-64.png) |
+| Dark | [PNG](assets/wren/wren-icon-dark-32.png) | [PNG](assets/wren/wren-icon-dark-64.png) |
+
+Icons include their backgrounds. Use the matching light or dark variant at its native size. Dark variants reverse the main silhouette to off-white for contrast. These exports are raster artwork, not editable vector masters.
+
+### Mascot Lockups
+
+- [Light lockup](assets/wren/aw-wren-lockup-light.svg): alert Wren beside the original gradient AW monogram and wordmark.
+- [Dark lockup](assets/wren/aw-wren-lockup-dark.svg): Light-colored Wren directly on navy beside the white AW monogram and wordmark.
+- [Asset overview](assets/wren/wren-asset-overview.png): all four poses on light and dark surfaces, plus native-size icon comparisons.
+
+Lockup SVGs embed the raster mascot alongside the vector AW mark. Their wordmark uses live system text; typography can vary slightly by renderer. Preserve the supplied spacing and aspect ratio. Use the monogram alone when the combined lockup becomes too small to read. Do not merge Wren into the AW letterforms or use the mascot as a replacement for the primary mark.
+
+### Transition Sprite Sheets
+
+Four illustrated transitions connect the approved poses: alert → in flight → perched → gathering → alert. Each transition has a navy bird for light surfaces and a light-colored bird for dark surfaces.
+
+- [Sprite sheet downloads and playback guidance](assets/wren/sprites/README.md)
+- [Frame coordinates and timing manifest](assets/wren/sprites/manifest.json)
+- [Animated comparison preview](assets/wren/sprites/wren-transitions-preview.gif)
+
+Each transparent PNG contains eight 256 × 256 frames in a four-column, two-row grid (1024 × 512 overall). Read left to right, then top to bottom. Suggested playback is 8 fps, once per transition, holding the final frame. Start and end frames preserve the approved static artwork. Intermediate folded shapes and thread positions vary slightly; these are illustrated frame animations rather than vector rigs. Keep the chosen color treatment consistent through playback. Respect reduced-motion preferences by displaying the destination pose without animation.
+
+### Voice and Accessibility
+
+Wren adds warmth through illustration. Keep written guidance precise and practical. Avoid speech bubbles, invented autonomy claims, or character dialogue in operational instructions. Use empty alt text when decorative; describe the pose when the image communicates meaning. Icon-only controls still require an accessible action label.
