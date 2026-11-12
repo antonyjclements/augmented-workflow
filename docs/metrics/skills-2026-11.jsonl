@@ -16,3 +16,11 @@
 {"ts":"2026-11-06T02:35:04.724Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-review","source":"skill","workflow_step":"review"}
 {"ts":"2026-11-06T02:35:36.069Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-check-workflow-compliance","source":"skill","workflow_step":"check_workflow_compliance"}
 {"ts":"2026-11-06T02:35:36.198Z","session_id":"678fdcce-fd22-4fc3-854a-672b009838fe","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"3c456078-abb8-4163-8a3a-036c105c315d","workflow_step":"commit"}
+{"ts":"2026-11-02T02:16:16.807Z","session_id":"af2ff5c3-45d0-4d98-838b-6c5952672201","skill":"aw-research","source":"skill"}
+{"ts":"2026-11-02T02:21:52.198Z","session_id":"af2ff5c3-45d0-4d98-838b-6c5952672201","skill":"aw-research","source":"skill"}
+{"ts":"2026-11-02T02:24:17.788Z","session_id":"af2ff5c3-45d0-4d98-838b-6c5952672201","skill":"aw-plan","source":"skill","workflow_step":"plan"}
+{"ts":"2026-11-02T02:29:02.620Z","session_id":"af2ff5c3-45d0-4d98-838b-6c5952672201","skill":"aw-review","source":"skill","workflow_step":"review"}
+{"ts":"2026-11-12T20:10:00.397Z","session_id":"1521b263-d894-4ca4-a6e2-7c4b3f959293","skill":"aw-create-worktree","source":"skill"}
+{"ts":"2026-11-12T20:12:12.271Z","session_id":"97566a45-e6ad-4b5e-89c6-fc63376407df","skill":"aw-ship","source":"skill","schema_version":2,"event":"invocation","mode":"full-pr","invocation_id":"CA152168-D0D6-4163-8DAF-A673EFBA36E2","workflow_step":"commit_push_pr"}
+{"ts":"2026-11-12T20:12:12.297Z","session_id":"97566a45-e6ad-4b5e-89c6-fc63376407df","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"CA152168-D0D6-4163-8DAF-A673EFBA36E2","workflow_step":"commit_push_pr"}
+{"ts":"2026-11-12T20:12:12.324Z","session_id":"97566a45-e6ad-4b5e-89c6-fc63376407df","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"CA152168-D0D6-4163-8DAF-A673EFBA36E2","workflow_step":"commit"}
