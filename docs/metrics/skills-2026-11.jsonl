@@ -24,3 +24,15 @@
 {"ts":"2026-11-12T20:12:12.271Z","session_id":"97566a45-e6ad-4b5e-89c6-fc63376407df","skill":"aw-ship","source":"skill","schema_version":2,"event":"invocation","mode":"full-pr","invocation_id":"CA152168-D0D6-4163-8DAF-A673EFBA36E2","workflow_step":"commit_push_pr"}
 {"ts":"2026-11-12T20:12:12.297Z","session_id":"97566a45-e6ad-4b5e-89c6-fc63376407df","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"CA152168-D0D6-4163-8DAF-A673EFBA36E2","workflow_step":"commit_push_pr"}
 {"ts":"2026-11-12T20:12:12.324Z","session_id":"97566a45-e6ad-4b5e-89c6-fc63376407df","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"CA152168-D0D6-4163-8DAF-A673EFBA36E2","workflow_step":"commit"}
+{"ts":"2026-11-12T20:58:51.776Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-create-worktree","source":"skill"}
+{"ts":"2026-11-12T20:58:51.814Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-spec","source":"skill","schema_version":2,"event":"invocation","mode":"direct","invocation_id":"E0E0CBEF-1AD5-4309-BB0A-F1F3F2561BF1","workflow_step":"create_spec"}
+{"ts":"2026-11-12T20:58:51.840Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-spec","source":"skill","schema_version":2,"event":"stage","mode":"direct","invocation_id":"E0E0CBEF-1AD5-4309-BB0A-F1F3F2561BF1","workflow_step":"create_spec"}
+{"ts":"2026-11-12T20:59:16.290Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-plan","source":"skill","workflow_step":"plan"}
+{"ts":"2026-11-12T20:59:40.286Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-review","source":"skill","workflow_step":"review"}
+{"ts":"2026-11-12T21:00:27.100Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-work","source":"skill","workflow_step":"work"}
+{"ts":"2026-11-12T21:07:02.150Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-synthesize-memory","source":"skill"}
+{"ts":"2026-11-12T21:07:53.171Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-review","source":"skill","workflow_step":"review"}
+{"ts":"2026-11-12T21:08:09.386Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-ship","source":"skill","schema_version":2,"event":"invocation","mode":"full-pr","invocation_id":"F9BEA47A-A8E2-48A3-B340-47B3658EB39F","workflow_step":"commit_push_pr"}
+{"ts":"2026-11-12T21:08:09.413Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"F9BEA47A-A8E2-48A3-B340-47B3658EB39F","workflow_step":"commit"}
+{"ts":"2026-11-12T21:08:43.196Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-check-workflow-compliance","source":"skill","workflow_step":"check_workflow_compliance"}
+{"ts":"2026-11-12T21:08:56.083Z","session_id":"8ca7f699-574d-4170-86f3-11a0eec11fa9","skill":"aw-ship","source":"skill","schema_version":2,"event":"stage","mode":"full-pr","invocation_id":"F9BEA47A-A8E2-48A3-B340-47B3658EB39F","workflow_step":"commit"}
