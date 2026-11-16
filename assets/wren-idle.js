@@ -60,7 +60,8 @@
     const mascot = visible[Math.floor(Math.random() * visible.length)];
     const first = edges.findIndex(edge => edge[0] === mascot.pose);
     const cycle = edges.map((_, index) => edges[(first + index) % edges.length]);
-    const urls = cycle.map(edge => `assets/wren/sprites/wren-${edge[0]}-to-${edge[1]}-${mascot.theme}.png`);
+    const theme = mascot.element.dataset.wrenTheme;
+    const urls = cycle.map(edge => `assets/wren/sprites/wren-${edge[0]}-to-${edge[1]}-${theme}.png`);
     const ready = await Promise.all(urls.map(load));
     if (!ready.every(Boolean) || token !== generation || !allowed()) return;
     // Reject any older pending playback when a load takes longer than one idle interval.
@@ -87,14 +88,24 @@
     }
     animation = requestAnimationFrame(tick);
   }
-  for (const image of document.querySelectorAll('.wren-hero, .wren-signoff')) {
+  for (const image of document.querySelectorAll('img[data-wren-pose][data-wren-theme]')) {
     const initialize = () => {
       if (!image.naturalWidth) return;
       const element = document.createElement('span');
       element.className = `${image.className} wren-sprite`;
       element.setAttribute('aria-hidden', 'true');
-      const rest = {backgroundImage:`url("${image.getAttribute('src')}")`,backgroundSize:'87.5% 87.5%',backgroundPosition:'50% 50%'};
-      const mascot = {element, rest, pose:image.dataset.wrenPose, theme:image.dataset.wrenTheme};
+      element.dataset.wrenTheme = image.dataset.wrenTheme;
+      const imageUrl = `url("${image.getAttribute('src')}")`;
+      if (image.dataset.guideWren) {
+        element.dataset.guideWren = image.dataset.guideWren;
+        element.style.setProperty('--wren-rest', imageUrl);
+      }
+      const rest = {
+        backgroundImage: image.dataset.guideWren ? 'var(--wren-rest)' : imageUrl,
+        backgroundSize: '87.5% 87.5%',
+        backgroundPosition: '50% 50%',
+      };
+      const mascot = {element, rest, pose:image.dataset.wrenPose};
       paint(mascot, rest);
       image.replaceWith(element);
       mascots.push(mascot);
@@ -115,6 +126,7 @@
     updateButton(); reset();
   });
   for (const event of ['pointermove','pointerdown','keydown','scroll','touchstart','wheel','resize']) window.addEventListener(event, reset, {passive:true});
+  window.addEventListener('aw-wren-theme-change', reset);
   document.addEventListener('visibilitychange', reset);
   window.addEventListener('pagehide', cancel);
   window.addEventListener('pageshow', reset);

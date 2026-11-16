@@ -3,15 +3,16 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../assets/wren-idle.js'),'utf8');
-function setup({reduced=false,stored=null,fail=false,defer=false,visible=true,theme='light',pose='perched'}={}) {
+function setup({reduced=false,stored=null,fail=false,defer=false,visible=true,theme='light',pose='perched',guide=false}={}) {
  let now=0,id=0,element;
  const timers=new Map(),rafs=new Map(),events={},pending=[];
  const rect={width:150,height:150,top:30,left:600,bottom:180,right:750};
  const image={complete:true,naturalWidth:627,className:'wren-hero',dataset:{wrenPose:pose,wrenTheme:theme},getAttribute:()=>`assets/wren/wren-${pose}.png`,replaceWith(node){element=node;}};
+ if (guide) image.dataset.guideWren=pose;
  const pref={matches:reduced,addEventListener:(name,fn)=>events.preference=fn};
  const button={setAttribute(k,v){this[k]=v;},addEventListener:(name,fn)=>events.click=fn};
  const document={hidden:false,querySelector:()=>button,querySelectorAll:()=>[image],addEventListener:(name,fn)=>events[name]=fn,
- createElement(){return {style:{},setAttribute(){},getBoundingClientRect:()=>visible?rect:{...rect,top:-100}};}};
+ createElement(){return {dataset:{},style:{setProperty(name,value){this[name]=value;}},setAttribute(){},getBoundingClientRect:()=>visible?rect:{...rect,top:-100}};}};
  const storage={value:stored,getItem(){return this.value;},setItem(k,v){this.value=v;}};
  vm.runInNewContext(source,{document,localStorage:storage,matchMedia:()=>pref,innerWidth:1200,innerHeight:800,
  Image:class {set src(url){this.url=url;pending.push(this);if(!defer)(fail?this.onerror:this.onload)();}},
@@ -59,6 +60,20 @@ test('hidden tabs and pagehide cancel motion; returning starts a fresh idle inte
 // TBS-015: lazy loading, stable artwork, theme matching, and cancellation races.
 test('offscreen birds cause no image downloads or playback',async()=>{const s=setup({visible:false});await s.advance(10000);assert.equal(s.pending.length,0);});
 test('dark-section Wren uses the light-colored dark sheet',async()=>{const s=setup({theme:'dark'});await s.advance(10000);assert.match(s.pending[0].url,/-dark\.png$/);});
+test('a guide theme change restores the matching resting pose and starts a new idle interval',async()=>{
+ const s=setup({guide:true,pose:'gathering'});
+ const darkRest='url("assets/wren/wren-gathering-dark.png")';
+ await s.advance(10000);s.frame(0);
+ assert.match(s.element.style.backgroundImage,/gathering-to-alert-light\.png/);
+ s.element.dataset.wrenTheme='dark';
+ s.element.style.setProperty('--wren-rest',darkRest);
+ s.events['aw-wren-theme-change']();
+ assert.equal(s.element.style.backgroundImage,'var(--wren-rest)');
+ assert.equal(s.element.style['--wren-rest'],darkRest);
+ await s.advance(9999);assert.equal(s.rafs.size,0);
+ await s.advance(1);s.frame(0);
+ assert.match(s.element.style.backgroundImage,/gathering-to-alert-dark\.png/);
+});
 test('failed sheet leaves resting artwork visible and is retried later',async()=>{
  const s=setup({fail:true});const rest={...s.element.style};await s.advance(10000);assert.deepEqual(s.element.style,rest);assert.equal(s.rafs.size,0);await s.advance(10000);assert.equal(s.pending.length,8);
 });
