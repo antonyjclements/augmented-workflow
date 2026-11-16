@@ -4,7 +4,7 @@ import { newTab } from './field-guide-articles.mjs';
 const pages = groups.flatMap(group => groupPages(group).map(page => ({ ...page, group })));
 const pageId = new URLSearchParams(location.search).get('page');
 const page = pages.find(candidate => candidate.id === pageId) ?? pages[0];
-const path = item => item.id === 'overview' ? 'field-guide.html' : '?page=' + item.id;
+const path = item => item.id === 'overview' ? './' : '?page=' + item.id;
 const firstPage = group => group.pages[0];
 const find = selector => document.querySelector(selector);
 const header = find('.guide-header');
@@ -41,7 +41,7 @@ function escape(text) {
 }
 
 const breadcrumb = `
-  <p class="breadcrumb"><a href="field-guide.html">Field guide</a> / <a href="${path(firstPage(page.group))}">${page.group.title}</a>${page.stage ? ' / ' + page.stage : ''}</p>
+  <p class="breadcrumb"><a href="./">Field guide</a> / <a href="${path(firstPage(page.group))}">${page.group.title}</a>${page.stage ? ' / ' + page.stage : ''}</p>
 `;
 const wren = page.wren
   ? `<div class="article-wren"><img data-guide-wren="${page.wren}" data-wren-pose="${page.wren}" data-wren-theme="light" src="assets/wren/wren-${page.wren}.png" alt="" width="88" height="88"></div>`
@@ -122,7 +122,7 @@ const folds = previous || next ? `
     ${previous ? `<a href="${path(previous)}"><span>← Previous fold</span><strong>${previous.navLabel ?? previous.title}</strong></a>` : ''}
     ${next ? `<a class="next-fold" href="${path(next)}"><span>Next fold →</span><strong>${next.navLabel ?? next.title}</strong></a>` : ''}
   </nav>
-  <footer class="concept-footer"><a href="field-guide.html">Augmented Workflow field guide</a></footer>
+  <footer class="concept-footer"><a href="./">Augmented Workflow field guide</a></footer>
 ` : '';
 find('.article-body').innerHTML = facts + preface + page.sections.map(([id, title, content, externalUrl], index) => `
   ${index === 1 ? skillSource : ''}

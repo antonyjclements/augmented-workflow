@@ -16,6 +16,7 @@ test('every guide article has substantive sections and valid article links', asy
       page.intro, page.preface, ...(page.meta ?? []), ...(page.facts ?? []).map(([, value]) => value),
       ...page.sections.map(([, , content]) => content),
     ].join(' ');
+    assert.doesNotMatch(markup, /href="(?:technical|usage-guide)\.html"/, page.id);
     for (const [, target, anchor] of markup.matchAll(/href="\?page=([a-z0-9-]+)(?:#([a-z0-9-]+))?"/g)) {
       assert.ok(byId.has(target), page.id + ' links to missing article ' + target);
       if (anchor) {
@@ -142,7 +143,6 @@ test('every concept chapter offers a sourced walkthrough and preserves its secti
 
 test('essay listings and links use the original GitHub Pages posts in a new tab', async () => {
   const { groups } = await import('../assets/field-guide-content.mjs');
-  const { readFileSync } = require('node:fs');
   const [index, ...notes] = groups.find(group => group.title === 'Essays').pages;
   const expectedUrls = notes.map(note => 'https://antonyjclements.github.io/posts/' + note.id + '/');
 
@@ -151,17 +151,6 @@ test('essay listings and links use the original GitHub Pages posts in a new tab'
   for (const [position, note] of notes.entries()) {
     assert.equal(note.externalUrl, expectedUrls[position]);
     assert.ok(note.meta.some(markup => markup.includes('href="' + note.externalUrl + '" target="_blank" rel="noopener noreferrer"')));
-  }
-
-  for (const filename of ['index.html', 'technical.html', 'usage-guide.html']) {
-    const html = readFileSync(require.resolve('../' + filename), 'utf8');
-    const essayLinks = [...html.matchAll(/href="(https:\/\/antonyjclements\.github\.io\/posts\/[^"]+)"([^>]*)/g)];
-    assert.ok(essayLinks.length > 0, filename);
-    for (const [, href, attributes] of essayLinks) {
-      assert.ok(expectedUrls.includes(href), href);
-      assert.match(attributes, /target="_blank"/, href);
-      assert.match(attributes, /rel="noopener noreferrer"/, href);
-    }
   }
 });
 

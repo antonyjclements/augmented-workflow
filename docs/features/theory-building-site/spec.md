@@ -1,6 +1,6 @@
 ---
 title: Theory-Building Site Narrative
-status: active
+status: archived
 created: 2026-09-06
 updated: 2026-10-29
 tags:
@@ -15,6 +15,8 @@ related_brainstorms:
 ---
 
 # Theory-Building Site Narrative
+
+The [Field Guide spec](../field-guide/spec.md) describes the current site. The following records the earlier site and its acceptance criteria.
 
 ## Intent
 

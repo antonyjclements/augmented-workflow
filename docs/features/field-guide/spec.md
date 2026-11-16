@@ -13,7 +13,7 @@ The public site gives readers a browsable reference for adopting AW and understa
 
 ### AWFG-001 — Read and navigate the guide
 
-The public site links to the guide. Its five navigation groups cover setup, theory, concepts, skills, and essays. Articles and their headings have shareable URLs. Desktop shows the section navigation, article, and current page outline together. Narrow screens offer access to the same navigation and outline without horizontal page overflow.
+The guide is the public site’s landing page. Its five navigation groups cover setup, theory, concepts, skills, and essays. Articles and their headings have shareable URLs at the site root. Old `field-guide.html` links forward to the root with the query and fragment intact. The former overview, technical model, and usage pages are retired. Desktop shows the section navigation, article, and current page outline together. Narrow screens offer access to the same navigation and outline without horizontal page overflow.
 
 ### AWFG-002 — Find a topic and choose a theme
 
@@ -57,7 +57,7 @@ After 10 seconds of inactivity, animate a visible article-header Wren through th
 
 ## Verification
 
-- AWFG-001: Open the guide from the homepage. Follow every generated page and outline link, reload a deep link, and inspect the layout at desktop, tablet, and phone widths.
+- AWFG-001: Open the guide at the site root. Follow every generated page and outline link and reload a deep link. Open an old guide URL with a query and fragment and confirm both reach the same article section. Verify the retired page URLs are absent and inspect desktop, tablet, and phone layouts.
 - AWFG-002: Search by title and by article text. Check keyboard open, submit, dismissal, and focus restoration. Toggle the theme and reload.
 - AWFG-003: Compare the rendered article with the workspace source and exercise the documented command with and without a marker.
 - AWFG-004: Compare Concepts and Programming as theory building against the new reference photos. Open a setup, concept, and theory page and follow section and related links. Select an essay and check its destination and tab behavior.

@@ -3,71 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="The Augmented Workflow Field Guide. Learn how to install AW, choose the right workflow, and carry context between people and agents.">
-  <title>Field Guide · Augmented Workflow</title>
-  <link rel="icon" href="assets/wren/wren-icon-light-32.png">
-  <link rel="stylesheet" href="assets/field-guide.css">
+  <title>Augmented Workflow Field Guide</title>
+  <link rel="canonical" href="https://antonyjclements.github.io/augmented-workflow/">
   <script>
-    try {
-      const theme = localStorage.getItem('aw-field-guide-theme');
-      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
-    } catch {}
+    const guide = new URL('./', window.location.href);
+    guide.search = window.location.search;
+    guide.hash = window.location.hash;
+    window.location.replace(guide.href);
   </script>
-  <script type="module" src="assets/field-guide.mjs"></script>
 </head>
 <body>
-  <a class="skip" href="#article">Skip to article</a>
-  <header class="guide-header">
-    <a class="brand" href="index.html" aria-label="Augmented Workflow home">
-      <img src="assets/augmented-workflow-mark.svg" alt="" width="31" height="18">
-      <span>Augmented Workflow</span>
-    </a>
-    <a class="guide-label" href="field-guide.html">Field Guide</a>
-    <button class="search-button" type="button" aria-haspopup="dialog" aria-keyshortcuts="Meta+K Control+K">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4.2 4.2"/></svg>
-      <span>Search the guide</span><kbd>⌘K</kbd>
-    </button>
-    <nav class="top-links" aria-label="Guide sections"></nav>
-    <button class="icon-button theme-button" type="button" aria-label="Dark theme" aria-pressed="false">
-      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg>
-      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"/></svg>
-    </button>
-    <a class="icon-button github" href="https://github.com/antonyjclements/augmented-workflow" aria-label="AW on GitHub">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M12 .75a11.25 11.25 0 0 0-3.56 21.92c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.8-1.33-3.8-1.33-.51-1.3-1.24-1.65-1.24-1.65-1.03-.7.08-.68.08-.68 1.13.08 1.73 1.16 1.73 1.16 1.01 1.73 2.64 1.23 3.28.94.1-.73.39-1.23.71-1.51-2.5-.28-5.13-1.25-5.13-5.57 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.1 1.15a10.8 10.8 0 0 1 5.64 0c2.15-1.46 3.1-1.15 3.1-1.15.61 1.55.22 2.7.11 2.98.72.79 1.15 1.8 1.15 3.02 0 4.34-2.64 5.28-5.15 5.56.4.35.77 1.03.77 2.08v3.1c0 .3.2.65.77.54A11.25 11.25 0 0 0 12 .75Z"/></svg>
-    </a>
-  </header>
-
-  <div class="guide-layout">
-    <div class="sidebar">
-      <button type="button" class="sidebar-toggle" aria-expanded="false" aria-controls="guide-nav">Browse the guide <span aria-hidden="true">⌄</span></button>
-      <nav class="sidebar-nav" id="guide-nav" aria-label="Field guide"></nav>
-    </div>
-    <main class="article-layout" id="article" tabindex="-1">
-      <header class="article-header"></header>
-      <aside class="outline" aria-label="Article navigation">
-        <button type="button" class="outline-toggle" aria-expanded="false" aria-controls="page-outline">On this page <span aria-hidden="true">⌄</span></button>
-        <nav class="outline-nav" id="page-outline" aria-label="On this page"></nav>
-        <div class="outline-note" hidden></div>
-      </aside>
-      <div class="article-body">
-        <noscript><h1>Field Guide</h1><p>Enable JavaScript to browse this guide, or <a href="https://github.com/antonyjclements/augmented-workflow">read the AW repository documentation</a>.</p></noscript>
-      </div>
-    </main>
-  </div>
-  <footer class="guide-footer">
-    <button type="button" data-wren-motion aria-pressed="false" hidden>Wren motion</button>
-  </footer>
-
-  <dialog class="search-dialog" aria-labelledby="search-title">
-    <form class="search-form" role="search">
-      <label id="search-title" for="guide-search">Search the guide</label>
-      <div class="search-input-row">
-        <input id="guide-search" type="search" placeholder="Search topics, examples, or skills…" autocomplete="off" autofocus>
-        <button class="icon-button search-close" type="button" aria-label="Close search">×</button>
-      </div>
-    </form>
-    <p class="search-status" role="status"></p>
-    <ul class="search-results"></ul>
-  </dialog>
+  <p><a href="./">Open the Augmented Workflow Field Guide</a></p>
 </body>
 </html>

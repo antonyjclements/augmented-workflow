@@ -2,8 +2,10 @@ features:
   - key: theory-building-site
     title: Theory-Building Site Narrative and Paper Presentation
     spec: docs/features/theory-building-site/spec.md
+    status: archived
     tags: [website, branding, motion]
   - key: field-guide
     title: Public AW Field Guide
     spec: docs/features/field-guide/spec.md
+    status: active
     tags: [website, documentation]

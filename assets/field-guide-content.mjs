@@ -118,7 +118,7 @@ aw status</code></pre></figure>
     `<ul><li><strong>Product.</strong> The outcome, limits, and acceptance examples.</li>
      <li><strong>Design.</strong> The intended experience, important states, and reasons for interaction choices.</li>
      <li><strong>Engineering.</strong> The implementation tradeoffs, checks, and evidence of what shipped.</li></ul>
-     <p><a href="usage-guide.html">Read the usage guide</a></p>`),
+     <p><a href="#worked-handoff">Follow an example across all three roles</a>.</p>`),
   article('credits', 'Credits',
     'Augmented Workflow is maintained by Antony Clements and its contributors.',
     'Sources and contributors',
