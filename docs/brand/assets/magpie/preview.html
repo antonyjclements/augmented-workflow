@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Magpie · Augmented Workflow</title>
+  <style>
+    :root {
+      font-family: system-ui, sans-serif;
+      color: #111827;
+      background: #f7f8fb;
+      font-synthesis: none;
+      --line: #dfe2ed;
+      --muted: #5f6673;
+      --accent: #5545cc;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a, button { color: inherit; }
+    button { font: inherit; cursor: pointer; }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
+    .wrap { width: min(1136px, calc(100% - 48px)); margin-inline: auto; }
+    header { border-bottom: 1px solid var(--line); background: #fff; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 62px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .brand img { display: block; width: 30px; height: 24px; object-fit: contain; }
+    main { padding-block: 48px 52px; }
+    h1 {
+      margin: 0;
+      font-size: clamp(56px, 8vw, 96px);
+      font-weight: 660;
+      line-height: .98;
+      letter-spacing: -.075em;
+    }
+    .intro { margin: 16px 0 32px; color: var(--muted); font-size: 16px; line-height: 1.5; }
+    .layout { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(260px, 1fr); gap: 24px; }
+    .viewer, .library { border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .viewer { overflow: hidden; }
+    .stage {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1.7;
+      overflow: hidden;
+      background:
+        radial-gradient(circle, #cbd0e1 1px, transparent 1.25px) center / 18px 18px,
+        radial-gradient(ellipse at center, #fdfdff, #eaedf6);
+    }
+    .stage[data-theme="dark"] {
+      background:
+        radial-gradient(circle, #454c65 1px, transparent 1.25px) center / 18px 18px,
+        radial-gradient(ellipse at center, #373d53, #262a3e);
+    }
+    .stage img { display: block; width: min(90%, 620px); height: auto; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px 12px 18px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .toolbar p { margin: 0; color: var(--muted); }
+    .controls { display: flex; align-items: center; gap: 12px; }
+    .themes { display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: #eef0f7; }
+    .themes button, .reset {
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 620;
+    }
+    .themes button[aria-pressed="true"] { color: var(--accent); background: #fff; }
+    .reset:hover { color: var(--accent); }
+    .library { align-self: start; padding: 20px 18px 18px; }
+    h2 { margin: 0 0 12px; font-size: 17px; font-weight: 660; letter-spacing: -.02em; }
+    .motion {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 6px;
+      border-top: 1px solid var(--line);
+      padding: 10px 0;
+    }
+    .motion button {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      border: 0;
+      border-radius: 7px;
+      padding: 4px 0;
+      background: #fff;
+      text-align: left;
+    }
+    .motion button strong { font-size: 14px; font-weight: 670; }
+    .motion button small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .play {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: #efedff;
+      color: var(--accent);
+    }
+    .play::after {
+      content: "";
+      width: 0;
+      height: 0;
+      margin-left: 2px;
+      border-block: 5px solid transparent;
+      border-left: 8px solid currentColor;
+    }
+    .motion button:is(:hover, [aria-current="true"]) .play { color: white; background: var(--accent); }
+    .format {
+      padding: 8px 1px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 650;
+      text-underline-offset: 3px;
+    }
+    .poster {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 11px 12px;
+      border-radius: 8px;
+      background: #f1f2f8;
+      font-size: 13px;
+      font-weight: 630;
+      text-decoration: none;
+    }
+    .poster:hover { color: var(--accent); }
+    .poster small { color: var(--muted); font-size: 11px; }
+    @media (max-width: 740px) {
+      .layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+      main { padding-block: 32px; }
+      .intro { margin-bottom: 22px; }
+    }
+    @media (max-width: 420px) {
+      .wrap { width: calc(100% - 28px); }
+      .stage { aspect-ratio: 1.4; }
+      .toolbar { padding-inline: 12px; }
+      .controls { gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap brand">
+      <img src="../augmented-workflow-mark.svg" alt="">
+      Augmented Workflow
+    </div>
+  </header>
+  <main class="wrap">
+    <h1>Magpie</h1>
+    <p class="intro">A folded-paper mascot for an Augmented Workflow sister site.</p>
+    <div class="layout">
+      <section class="viewer" aria-label="Mascot preview">
+        <div class="stage" data-theme="light">
+          <img src="magpie.png" width="1536" height="1024" alt="">
+        </div>
+        <div class="toolbar">
+          <p role="status">Standing pose</p>
+          <div class="controls">
+            <button class="reset" type="button">Reset pose</button>
+            <div class="themes" role="group" aria-label="Preview background">
+              <button type="button" data-theme="light" aria-pressed="true">Light</button>
+              <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="library" aria-labelledby="motion-heading">
+        <h2 id="motion-heading">Animations</h2>
+        <div class="motion">
+          <button type="button" data-motion="idle" data-label="Idle">
+            <span class="play" aria-hidden="true"></span>
+            <span><strong>Idle</strong><small>A small shift and a blink</small></span>
+          </button>
+          <a class="format" href="magpie-idle.webp" download aria-label="Download Idle WebP">WebP</a>
+        </div>
+        <div class="motion">
+          <button type="button" data-motion="gather" data-label="Gather">
+            <span class="play" aria-hidden="true"></span>
+            <span><strong>Gather</strong><small>Picks up a violet token</small></span>
+          </button>
+          <a class="format" href="magpie-gather.webp" download aria-label="Download Gather WebP">WebP</a>
+        </div>
+        <div class="motion">
+          <button type="button" data-motion="takeoff" data-label="Takeoff">
+            <span class="play" aria-hidden="true"></span>
+            <span><strong>Takeoff</strong><small>Pushes off, flaps, and glides</small></span>
+          </button>
+          <a class="format" href="magpie-takeoff.webp" download aria-label="Download Takeoff WebP">WebP</a>
+        </div>
+        <a class="poster" href="magpie.png" download>Download standing pose <small>PNG</small></a>
+      </section>
+    </div>
+  </main>
+  <script>
+    const stage = document.querySelector(".stage");
+    const status = document.querySelector('[role="status"]');
+    const themes = document.querySelectorAll(".themes button");
+    const motions = document.querySelectorAll("[data-motion]");
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    let revision = 0;
+
+    function resetPose() {
+      revision++;
+      stage.firstElementChild.src = "magpie.png";
+      motions.forEach((button) => button.removeAttribute("aria-current"));
+      status.textContent = "Standing pose";
+    }
+
+    document.querySelector(".reset").addEventListener("click", resetPose);
+    reducedMotion.addEventListener("change", resetPose);
+
+    themes.forEach((button) => button.addEventListener("click", () => {
+      stage.dataset.theme = button.dataset.theme;
+      themes.forEach((theme) => theme.setAttribute("aria-pressed", String(theme === button)));
+    }));
+
+    motions.forEach((button) => button.addEventListener("click", () => {
+      if (reducedMotion.matches) {
+        resetPose();
+        status.textContent = "Standing pose · reduced motion";
+        return;
+      }
+      const request = ++revision;
+      const next = new Image(1536, 1024);
+      next.alt = "";
+      next.addEventListener("load", () => {
+        if (request !== revision) return;
+        stage.replaceChildren(next);
+        motions.forEach((motion) => {
+          if (motion === button) motion.setAttribute("aria-current", "true");
+          else motion.removeAttribute("aria-current");
+        });
+        status.textContent = button.dataset.label + " preview";
+      });
+      next.addEventListener("error", () => {
+        if (request === revision) status.textContent = "Preview could not load";
+      });
+      next.src = `magpie-${button.dataset.motion}.webp?play=${request}`;
+    }));
+  </script>
+</body>
+</html>
