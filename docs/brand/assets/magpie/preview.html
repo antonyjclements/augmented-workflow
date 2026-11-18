@@ -59,7 +59,7 @@
         radial-gradient(circle, #454c65 1px, transparent 1.25px) center / 18px 18px,
         radial-gradient(ellipse at center, #373d53, #262a3e);
     }
-    .stage img { display: block; width: min(90%, 620px); height: auto; }
+    .stage canvas { display: block; width: min(85%, 384px); height: auto; }
     .toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -147,10 +147,31 @@
     }
     .poster:hover { color: var(--accent); }
     .poster small { color: var(--muted); font-size: 11px; }
+    .cycle { width: 100%; border: 0; text-align: left; cursor: pointer; }
+    .sheets { margin-top: 32px; }
+    .sheets p { color: var(--muted); font-size: 13px; }
+    .atlas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .atlas-grid a {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .atlas-grid img {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin-top: 12px;
+      background: #f7f8fb;
+    }
+    .atlas-grid[data-theme="dark"] img { background: #111827; }
     @media (max-width: 740px) {
       .layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
       main { padding-block: 32px; }
       .intro { margin-bottom: 22px; }
+      .atlas-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 420px) {
       .wrap { width: calc(100% - 28px); }
@@ -169,11 +190,11 @@
   </header>
   <main class="wrap">
     <h1>Magpie</h1>
-    <p class="intro">A folded-paper mascot for an Augmented Workflow sister site.</p>
+    <p class="intro">Sprite sheets for an Augmented Workflow sister site.</p>
     <div class="layout">
       <section class="viewer" aria-label="Mascot preview">
         <div class="stage" data-theme="light">
-          <img src="magpie.png" width="1536" height="1024" alt="">
+          <canvas width="256" height="256" aria-hidden="true"></canvas>
         </div>
         <div class="toolbar">
           <p role="status">Standing pose</p>
@@ -187,31 +208,61 @@
         </div>
       </section>
       <section class="library" aria-labelledby="motion-heading">
-        <h2 id="motion-heading">Animations</h2>
+        <h2 id="motion-heading">Transitions</h2>
         <div class="motion">
-          <button type="button" data-motion="idle" data-label="Idle">
+          <button type="button" data-motion="alert-to-in-flight" data-label="Alert → in flight" data-end="In flight">
             <span class="play" aria-hidden="true"></span>
-            <span><strong>Idle</strong><small>A small shift and a blink</small></span>
+            <span><strong>Alert → in flight</strong><small>Crouches and opens its wings</small></span>
           </button>
-          <a class="format" href="magpie-idle.webp" download aria-label="Download Idle WebP">WebP</a>
+          <a class="format" data-sheet="alert-to-in-flight" href="sprites/magpie-alert-to-in-flight-light.png" download aria-label="Download alert to in flight sprite sheet">PNG</a>
         </div>
         <div class="motion">
-          <button type="button" data-motion="gather" data-label="Gather">
+          <button type="button" data-motion="in-flight-to-perched" data-label="In flight → perched" data-end="Perched">
             <span class="play" aria-hidden="true"></span>
-            <span><strong>Gather</strong><small>Picks up a violet token</small></span>
+            <span><strong>In flight → perched</strong><small>Lands and folds its wings</small></span>
           </button>
-          <a class="format" href="magpie-gather.webp" download aria-label="Download Gather WebP">WebP</a>
+          <a class="format" data-sheet="in-flight-to-perched" href="sprites/magpie-in-flight-to-perched-light.png" download aria-label="Download in flight to perched sprite sheet">PNG</a>
         </div>
         <div class="motion">
-          <button type="button" data-motion="takeoff" data-label="Takeoff">
+          <button type="button" data-motion="perched-to-gathering" data-label="Perched → gathering" data-end="Gathering">
             <span class="play" aria-hidden="true"></span>
-            <span><strong>Takeoff</strong><small>Pushes off, flaps, and glides</small></span>
+            <span><strong>Perched → gathering</strong><small>Leans forward to gather</small></span>
           </button>
-          <a class="format" href="magpie-takeoff.webp" download aria-label="Download Takeoff WebP">WebP</a>
+          <a class="format" data-sheet="perched-to-gathering" href="sprites/magpie-perched-to-gathering-light.png" download aria-label="Download perched to gathering sprite sheet">PNG</a>
         </div>
-        <a class="poster" href="magpie.png" download>Download standing pose <small>PNG</small></a>
+        <div class="motion">
+          <button type="button" data-motion="gathering-to-alert" data-label="Gathering → alert" data-end="Alert">
+            <span class="play" aria-hidden="true"></span>
+            <span><strong>Gathering → alert</strong><small>Rises into an attentive stance</small></span>
+          </button>
+          <a class="format" data-sheet="gathering-to-alert" href="sprites/magpie-gathering-to-alert-light.png" download aria-label="Download gathering to alert sprite sheet">PNG</a>
+        </div>
+        <button class="poster cycle" type="button">Play full sequence <small>4 transitions</small></button>
+        <a class="poster" href="sprites/manifest.json" download>Download manifest <small>JSON</small></a>
       </section>
     </div>
+    <section class="sheets" aria-labelledby="sheets-heading">
+      <h2 id="sheets-heading">Sprite sheets</h2>
+      <p>Eight 256 × 256 frames per PNG, arranged in four columns and two rows. Playback at 8 fps.</p>
+      <div class="atlas-grid" data-theme="light">
+        <a data-sheet="alert-to-in-flight" href="sprites/magpie-alert-to-in-flight-light.png" download>
+          Alert → in flight
+          <img src="sprites/magpie-alert-to-in-flight-light.png" width="1024" height="512" alt="Eight frames of the magpie taking flight">
+        </a>
+        <a data-sheet="in-flight-to-perched" href="sprites/magpie-in-flight-to-perched-light.png" download>
+          In flight → perched
+          <img src="sprites/magpie-in-flight-to-perched-light.png" width="1024" height="512" alt="Eight frames of the magpie landing">
+        </a>
+        <a data-sheet="perched-to-gathering" href="sprites/magpie-perched-to-gathering-light.png" download>
+          Perched → gathering
+          <img src="sprites/magpie-perched-to-gathering-light.png" width="1024" height="512" alt="Eight frames of the magpie leaning down">
+        </a>
+        <a data-sheet="gathering-to-alert" href="sprites/magpie-gathering-to-alert-light.png" download>
+          Gathering → alert
+          <img src="sprites/magpie-gathering-to-alert-light.png" width="1024" height="512" alt="Eight frames of the magpie standing upright">
+        </a>
+      </div>
+    </section>
   </main>
   <script>
     const stage = document.querySelector(".stage");
@@ -219,46 +270,99 @@
     const themes = document.querySelectorAll(".themes button");
     const motions = document.querySelectorAll("[data-motion]");
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    const canvas = document.querySelector("canvas");
+    const context = canvas.getContext("2d");
+    const images = new Map();
     let revision = 0;
+    let animation = 0;
+    let destination = "alert-to-in-flight";
 
-    function resetPose() {
-      revision++;
-      stage.firstElementChild.src = "magpie.png";
-      motions.forEach((button) => button.removeAttribute("aria-current"));
-      status.textContent = "Standing pose";
+    function sheetPath(name) {
+      return `sprites/magpie-${name}-${stage.dataset.theme}.png`;
     }
 
-    document.querySelector(".reset").addEventListener("click", resetPose);
-    reducedMotion.addEventListener("change", resetPose);
+    function loadSheet(name) {
+      const path = sheetPath(name);
+      if (!images.has(path)) {
+        const image = new Image();
+        image.src = path;
+        images.set(path, image);
+      }
+      return images.get(path).decode().then(() => images.get(path));
+    }
 
+    function draw(image, name, frame) {
+      context.clearRect(0, 0, 256, 256);
+      context.drawImage(image, (frame % 4) * 256, Math.floor(frame / 4) * 256,
+        256, 256, 0, 0, 256, 256);
+      canvas.dataset.transition = name;
+      canvas.dataset.frame = String(frame);
+      canvas.dataset.theme = stage.dataset.theme;
+    }
+
+    async function play(names, stillFrame) {
+      const request = ++revision;
+      clearTimeout(animation);
+      destination = names.at(-1);
+      canvas.dataset.playing = "false";
+      try {
+        const sheets = await Promise.all(names.map(loadSheet));
+        if (request !== revision) return;
+        const last = names.length - 1;
+        const target = [...motions].find((button) => button.dataset.motion === names[last]);
+        if (stillFrame !== undefined || reducedMotion.matches) {
+          draw(sheets[last], names[last], stillFrame ?? 7);
+          motions.forEach((button) => button.removeAttribute("aria-current"));
+          status.textContent = stillFrame === 0 ? "Standing pose" : target.dataset.end + " pose";
+          return;
+        }
+        const frames = names.flatMap((name, sheet) =>
+          Array.from({ length: sheet === 0 ? 8 : 7 }, (_, offset) =>
+            ({ name, sheet, frame: offset + (sheet === 0 ? 0 : 1) })));
+        const started = performance.now();
+        canvas.dataset.playing = "true";
+        function tick() {
+          if (request !== revision) return;
+          const now = performance.now();
+          const index = Math.max(0, Math.min(Math.floor((now - started) / 125), frames.length - 1));
+          const { name, sheet, frame } = frames[index];
+          draw(sheets[sheet], name, frame);
+          const current = [...motions].find((button) => button.dataset.motion === name);
+          motions.forEach((button) => {
+            if (button === current) button.setAttribute("aria-current", "true");
+            else button.removeAttribute("aria-current");
+          });
+          if (now - started < frames.length * 125) {
+            if (status.textContent !== current.dataset.label) status.textContent = current.dataset.label;
+            animation = setTimeout(tick, 125);
+          } else {
+            canvas.dataset.playing = "false";
+            status.textContent = target.dataset.end + " pose";
+          }
+        }
+        tick();
+      } catch {
+        if (request === revision) status.textContent = "Sprite sheet could not load";
+      }
+    }
+
+    document.querySelector(".reset").addEventListener("click", () => play(["alert-to-in-flight"], 0));
+    document.querySelector(".cycle").addEventListener("click", () =>
+      play([...motions].map((button) => button.dataset.motion)));
+    reducedMotion.addEventListener("change", () => play([destination], 7));
+    motions.forEach((button) => button.addEventListener("click", () => play([button.dataset.motion])));
     themes.forEach((button) => button.addEventListener("click", () => {
       stage.dataset.theme = button.dataset.theme;
+      document.querySelector(".atlas-grid").dataset.theme = button.dataset.theme;
       themes.forEach((theme) => theme.setAttribute("aria-pressed", String(theme === button)));
-    }));
-
-    motions.forEach((button) => button.addEventListener("click", () => {
-      if (reducedMotion.matches) {
-        resetPose();
-        status.textContent = "Standing pose · reduced motion";
-        return;
-      }
-      const request = ++revision;
-      const next = new Image(1536, 1024);
-      next.alt = "";
-      next.addEventListener("load", () => {
-        if (request !== revision) return;
-        stage.replaceChildren(next);
-        motions.forEach((motion) => {
-          if (motion === button) motion.setAttribute("aria-current", "true");
-          else motion.removeAttribute("aria-current");
-        });
-        status.textContent = button.dataset.label + " preview";
+      document.querySelectorAll("[data-sheet]").forEach((link) => {
+        link.href = sheetPath(link.dataset.sheet);
+        const image = link.querySelector("img");
+        if (image) image.src = sheetPath(link.dataset.sheet);
       });
-      next.addEventListener("error", () => {
-        if (request === revision) status.textContent = "Preview could not load";
-      });
-      next.src = `magpie-${button.dataset.motion}.webp?play=${request}`;
+      play(["alert-to-in-flight"], 0);
     }));
+    play(["alert-to-in-flight"], 0);
   </script>
 </body>
 </html>

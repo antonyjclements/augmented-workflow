@@ -2,7 +2,22 @@
 
 A folded-paper Eurasian magpie for an Augmented Workflow sister site. The long tail and ivory shoulder patch distinguish it from [Wren](../wren/wren-alert.png). Navy paper and violet wing folds connect the two characters.
 
-Open [the preview](preview.html) in a browser to play each animation on light and dark surfaces and download the assets.
+Open [the preview](preview.html) in a browser to play the sprite sheets, view every atlas, switch between light and dark artwork, and download the assets.
+
+## Transition sprite sheets
+
+The [sprite sheet package](sprites/README.md) matches Wren's four transitions and light/dark treatments. Each transparent PNG is 1024 × 512 pixels, holding eight 256 × 256 frames in a four-column, two-row grid.
+
+- [Alert → in flight](sprites/magpie-alert-to-in-flight-light.png)
+- [In flight → perched](sprites/magpie-in-flight-to-perched-light.png)
+- [Perched → gathering](sprites/magpie-perched-to-gathering-light.png)
+- [Gathering → alert](sprites/magpie-gathering-to-alert-light.png)
+- [Frame coordinates and timing](sprites/manifest.json)
+- [Both themes in motion](sprites/magpie-transitions-preview.gif)
+
+The linked sheets above use navy artwork for light surfaces. The sprite package includes ivory artwork for dark surfaces. Every transition plays at 8 fps and shares exact endpoint pixels with its neighbors.
+
+## Standing pose and WebP exports
 
 | Asset | File | Size | Motion |
 | --- | --- | --- | --- |
